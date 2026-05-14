@@ -12,6 +12,7 @@ import { ApplicationsList } from "@/components/views/ApplicationsList";
 import { useInitStore, useStore, stopAlert } from "@/lib/store";
 import { applyFilters } from "@/lib/filter";
 import { useThemeSync } from "@/lib/theme";
+import { ViewBoundary } from "@/components/ViewBoundary";
 
 // Lazy-load heavy panels — keeps initial dashboard render fast.
 const Analytics = lazy(() => import("@/components/views/Analytics").then((m) => ({ default: m.Analytics })));

@@ -4,28 +4,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -45,100 +28,683 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-board: var(--board);
+  --color-board-tile: var(--board-tile);
+  --color-board-tile-alt: var(--board-tile-alt);
+  --color-board-bezel: var(--board-bezel);
+  --color-board-divider: var(--board-divider);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-status-applied: var(--status-applied);
+  --color-status-interview: var(--status-interview);
+  --color-status-followup: var(--status-followup);
+  --color-status-saved: var(--status-saved);
+  --color-status-offer: var(--status-offer);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-waiting: var(--status-waiting);
+  --color-status-assessment: var(--status-assessment);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* ============ DARK (default) ============ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --radius: 0.5rem;
+  --background: oklch(0.16 0.005 270);
+  --foreground: oklch(0.95 0.01 90);
+  --card: oklch(0.18 0.006 270);
+  --card-foreground: oklch(0.95 0.01 90);
+  --popover: oklch(0.20 0.008 270);
+  --popover-foreground: oklch(0.95 0.01 90);
+  --primary: oklch(0.82 0.14 80);
+  --primary-foreground: oklch(0.16 0.005 270);
+  --secondary: oklch(0.24 0.008 270);
+  --secondary-foreground: oklch(0.95 0.01 90);
+  --muted: oklch(0.22 0.006 270);
+  --muted-foreground: oklch(0.62 0.015 90);
+  --accent: oklch(0.26 0.01 270);
+  --accent-foreground: oklch(0.95 0.01 90);
+  --destructive: oklch(0.62 0.18 25);
+  --destructive-foreground: oklch(0.98 0.005 90);
+  --border: oklch(0.28 0.008 270);
+  --input: oklch(0.22 0.008 270);
+  --ring: oklch(0.82 0.14 80);
+
+  --board: oklch(0.13 0.004 270);
+  --board-tile: oklch(0.17 0.005 270);
+  --board-tile-alt: oklch(0.155 0.005 270);
+  --board-bezel: oklch(0.10 0.003 270);
+  --board-divider: oklch(0.22 0.006 270);
+
+  --amber: oklch(0.78 0.16 80);
+  --amber-soft: oklch(0.55 0.13 78);
+
+  --status-applied: oklch(0.72 0.13 235);
+  --status-interview: oklch(0.72 0.14 295);
+  --status-followup: oklch(0.74 0.14 50);
+  --status-saved: oklch(0.65 0.012 90);
+  --status-offer: oklch(0.74 0.16 145);
+  --status-rejected: oklch(0.62 0.18 25);
+  --status-waiting: oklch(0.74 0.13 65);
+  --status-assessment: oklch(0.78 0.15 90);
+
+  --tile-top: oklch(0.205 0.006 270);
+  --tile-mid-top: oklch(0.175 0.005 270);
+  --tile-mid-bot: oklch(0.115 0.004 270);
+  --tile-bot: oklch(0.165 0.005 270);
+  --hinge-line: oklch(0 0 0 / 0.85);
+  --hinge-highlight: oklch(0.32 0.01 270 / 0.55);
+  --tile-rim-top: oklch(0.32 0.01 270 / 0.55);
+  --tile-rim-bot: oklch(0 0 0 / 0.65);
+  --bg-grad-1: oklch(0.20 0.008 270);
+  --bg-grad-2: oklch(0.18 0.008 280);
 }
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+/* ============ LIGHT ============ */
+.light {
+  /* Warm, paper-like terminal ambience around a charcoal split-flap board */
+  --background: oklch(0.96 0.004 90);
+  --foreground: oklch(0.18 0.008 265);
+  --card: oklch(0.985 0.003 90);
+  --card-foreground: oklch(0.18 0.008 265);
+  --popover: oklch(0.99 0.002 90);
+  --popover-foreground: oklch(0.18 0.008 265);
+  --primary: oklch(0.50 0.14 60);
+  --primary-foreground: oklch(0.985 0.003 90);
+  --secondary: oklch(0.92 0.004 90);
+  --secondary-foreground: oklch(0.20 0.008 265);
+  --muted: oklch(0.93 0.004 90);
+  --muted-foreground: oklch(0.34 0.010 265);
+  --accent: oklch(0.90 0.008 80);
+  --accent-foreground: oklch(0.20 0.008 265);
+  --destructive: oklch(0.52 0.21 25);
+  --destructive-foreground: oklch(0.985 0.005 90);
+  --border: oklch(0.82 0.006 90);
+  --input: oklch(0.97 0.004 90);
+  --ring: oklch(0.50 0.14 60);
+
+  /* Board becomes a true light surface — premium daytime terminal */
+  --board: oklch(0.91 0.005 90);
+  --board-tile: oklch(0.94 0.004 90);
+  --board-tile-alt: oklch(0.92 0.004 90);
+  --board-bezel: oklch(0.86 0.006 90);
+  --board-divider: oklch(0.80 0.006 90);
+
+  --amber: oklch(0.78 0.16 80);
+  --amber-soft: oklch(0.62 0.13 75);
+
+  --status-applied: oklch(0.45 0.16 245);
+  --status-interview: oklch(0.46 0.17 295);
+  --status-followup: oklch(0.50 0.16 55);
+  --status-saved: oklch(0.40 0.012 90);
+  --status-offer: oklch(0.46 0.16 150);
+  --status-rejected: oklch(0.50 0.20 25);
+  --status-waiting: oklch(0.50 0.15 70);
+  --status-assessment: oklch(0.50 0.16 90);
+
+  --tile-top: oklch(0.965 0.004 90);
+  --tile-mid-top: oklch(0.935 0.004 90);
+  --tile-mid-bot: oklch(0.86 0.005 90);
+  --tile-bot: oklch(0.92 0.004 90);
+  --hinge-line: oklch(0.55 0.008 90 / 0.45);
+  --hinge-highlight: oklch(1 0 0 / 0.7);
+  --tile-rim-top: oklch(1 0 0 / 0.8);
+  --tile-rim-bot: oklch(0 0 0 / 0.12);
+  --bg-grad-1: oklch(0.97 0.005 90);
+  --bg-grad-2: oklch(0.93 0.006 80);
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  body {
+  * { border-color: var(--color-border); }
+  html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-mono);
+    -webkit-font-smoothing: antialiased;
   }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 0%, var(--bg-grad-1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, var(--bg-grad-2) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* ============ Bezel ============ */
+.board-frame {
+  background: linear-gradient(180deg, var(--board-bezel),
+    color-mix(in oklab, var(--board-bezel) 70%, black));
+  border: 1px solid color-mix(in oklab, var(--board-bezel) 60%, white 6%);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--board-bezel) 40%, white 15%),
+    inset 0 -1px 0 oklch(0 0 0 / 0.55),
+    0 30px 60px -22px oklch(0 0 0 / 0.55),
+    0 0 0 1px oklch(0 0 0 / 0.35);
+  position: relative;
+}
+/* Decorative bezel screws intentionally removed for a cleaner, modern look */
+
+/* ============ Split-flap tile ============ */
+.board-tile {
+  position: relative;
+  background:
+    /* faint vertical card-stock micro-grooves */
+    repeating-linear-gradient(90deg,
+      oklch(0 0 0 / 0.05) 0 1px,
+      transparent 1px 3px),
+    /* main flap gradient + razor-thin hinge seam */
+    linear-gradient(180deg,
+      var(--tile-top) 0%,
+      var(--tile-mid-top) 49.4%,
+      var(--hinge-line) 49.7%,
+      var(--hinge-line) 50.3%,
+      var(--hinge-highlight) 50.6%,
+      var(--tile-mid-bot) 51%,
+      var(--tile-bot) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--tile-rim-top),
+    inset 0 -1px 0 var(--tile-rim-bot);
+}
+/* Subtle horizontal hairline shadow under each flap row to imply stacked tiles */
+.board-tile::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -2px; height: 2px;
+  background: linear-gradient(180deg,
+    oklch(0 0 0 / 0.28) 0%,
+    oklch(0 0 0 / 0) 100%);
+  pointer-events: none;
+}
+.light .board-tile::after {
+  background: linear-gradient(180deg,
+    oklch(0 0 0 / 0.10) 0%,
+    oklch(0 0 0 / 0) 100%);
+}
+/* Side hinge axles removed — cleaner premium board */
+
+.flap-text {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 oklch(0 0 0 / 0.55);
+}
+.light .flap-text { text-shadow: 0 1px 0 oklch(1 0 0 / 0.55); }
+
+.flap-cell {
+  display: inline-block;
+  background: linear-gradient(180deg,
+    var(--tile-top) 0%,
+    var(--tile-mid-top) 49%,
+    var(--hinge-line) 50%,
+    var(--tile-mid-bot) 51%,
+    var(--tile-bot) 100%);
+  color: oklch(0.95 0.01 90);
+  padding: 4px 6px;
+  margin: 0 1px;
+  border-radius: 2px;
+  border-top: 1px solid var(--tile-rim-top);
+  border-bottom: 1px solid var(--tile-rim-bot);
+  min-width: 1ch;
+  text-align: center;
+  text-shadow: 0 1px 0 oklch(0 0 0 / 0.7);
+}
+.light .flap-cell {
+  color: oklch(0.18 0.008 265);
+  text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
+}
+
+/* Pinned (favorite) row — amber flap stock */
+.row-pinned {
+  background:
+    repeating-linear-gradient(90deg,
+      oklch(0 0 0 / 0.06) 0 1px,
+      transparent 1px 3px),
+    linear-gradient(180deg,
+      oklch(0.62 0.14 78) 0%,
+      oklch(0.55 0.13 75) 49.4%,
+      oklch(0 0 0 / 0.7) 49.7%,
+      oklch(0 0 0 / 0.7) 50.3%,
+      oklch(0.42 0.10 72) 50.6%,
+      oklch(0.50 0.12 75) 51%,
+      oklch(0.58 0.13 76) 100%) !important;
+  color: oklch(0.14 0.02 60) !important;
+}
+.row-pinned .flap-text,
+.row-pinned span,
+.row-pinned td {
+  color: oklch(0.14 0.02 60) !important;
+  text-shadow: 0 1px 0 oklch(0.95 0.01 90 / 0.25) !important;
+}
+
+.row-flap { transition: filter 120ms ease; }
+.row-flap:hover { filter: brightness(1.08) saturate(1.05); }
+.light .row-flap:hover { filter: brightness(1.04); }
+.row-flap.is-selected {
+  outline: 1px solid color-mix(in oklab, var(--amber) 70%, transparent);
+  outline-offset: -1px;
+}
+
+.flap-anim { animation: flap-flip 280ms ease-out; }
+@keyframes flap-flip {
+  0% { transform: rotateX(-80deg); opacity: 0.4; }
+  100% { transform: rotateX(0deg); opacity: 1; }
+}
+
+.bezel-screw { display: none !important; }
+
+.scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+
+/* ============ Light-mode polish: shell, panels, depth ============ */
+.light body {
+  background-image:
+    radial-gradient(1200px 600px at 15% -10%, var(--bg-grad-1) 0%, transparent 60%),
+    radial-gradient(900px 500px at 95% 110%, var(--bg-grad-2) 0%, transparent 60%),
+    linear-gradient(180deg, oklch(0.97 0.004 90) 0%, oklch(0.93 0.005 85) 100%);
+}
+.light .board-frame {
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--board-bezel) 90%, white 8%),
+    var(--board-bezel));
+  border: 1px solid color-mix(in oklab, var(--board-bezel) 60%, black 8%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.7),
+    inset 0 -1px 0 oklch(0 0 0 / 0.08),
+    0 18px 40px -22px oklch(0 0 0 / 0.18),
+    0 1px 3px -1px oklch(0 0 0 / 0.10);
+}
+.light aside,
+.light .paper-surface {
+  background: linear-gradient(180deg,
+    oklch(0.985 0.003 90) 0%,
+    oklch(0.96 0.004 85) 100%);
+  color: var(--foreground);
+  border-color: var(--border);
+  box-shadow:
+    0 1px 0 oklch(1 0 0 / 0.7) inset,
+    0 10px 24px -18px oklch(0 0 0 / 0.18);
+}
+/* Inputs and buttons read as light surfaces */
+.light input,
+.light textarea,
+.light select {
+  background: var(--input);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+.light input::placeholder,
+.light textarea::placeholder {
+  color: color-mix(in oklab, var(--foreground) 45%, transparent);
+}
+/* Stronger borders/separators in light for hierarchy */
+.light .border-board-divider { border-color: color-mix(in oklab, var(--board-divider) 60%, white 5%); }
+/* Make muted text legible on warm paper */
+.light .text-muted-foreground { color: var(--muted-foreground); }
+/* Hover states */
+.light .hover\:bg-accent:hover { background-color: var(--accent); }
+/* Pinned rows in light mode — keep amber legible */
+.light .row-pinned,
+.light .row-pinned .flap-text,
+.light .row-pinned td,
+.light .row-pinned span { color: oklch(0.18 0.04 60) !important; }
+
+/* ============ Global pointer cursor for clickable elements ============ */
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]),
+[role="menuitem"],
+[role="tab"],
+[role="option"],
+[role="switch"],
+[role="checkbox"],
+[role="radio"],
+summary,
+label[for],
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="file"],
+input[type="color"],
+input[type="range"],
+.row-flap,
+.cursor-pointer {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* ============ Dashboard split-flap row enhancement ============ */
+/* Subtle vertical "flap cell" segmentation behind row text — applied ONLY
+   to dashboard rows (.row-flap.board-tile). Does NOT touch side menu,
+   modals, drawer, analytics, exports, timer, or settings. */
+.row-flap.board-tile {
+  background-image:
+    /* vertical cell divisions (every ~12px) */
+    repeating-linear-gradient(90deg,
+      oklch(0 0 0 / 0.18) 0 1px,
+      transparent 1px 12px),
+    /* original micro-grooves */
+    repeating-linear-gradient(90deg,
+      oklch(0 0 0 / 0.05) 0 1px,
+      transparent 1px 3px),
+    linear-gradient(180deg,
+      var(--tile-top) 0%,
+      var(--tile-mid-top) 49.4%,
+      var(--hinge-line) 49.7%,
+      var(--hinge-line) 50.3%,
+      var(--hinge-highlight) 50.6%,
+      var(--tile-mid-bot) 51%,
+      var(--tile-bot) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--tile-rim-top),
+    inset 0 -1px 0 var(--tile-rim-bot),
+    inset 0 0 24px oklch(0 0 0 / 0.18);
+}
+.light .row-flap.board-tile {
+  background-image:
+    repeating-linear-gradient(90deg,
+      oklch(0 0 0 / 0.08) 0 1px,
+      transparent 1px 12px),
+    repeating-linear-gradient(90deg,
+      oklch(0 0 0 / 0.03) 0 1px,
+      transparent 1px 3px),
+    linear-gradient(180deg,
+      var(--tile-top) 0%,
+      var(--tile-mid-top) 49.4%,
+      var(--hinge-line) 49.7%,
+      var(--hinge-line) 50.3%,
+      var(--hinge-highlight) 50.6%,
+      var(--tile-mid-bot) 51%,
+      var(--tile-bot) 100%);
+  box-shadow:
+    inset 0 1px 0 var(--tile-rim-top),
+    inset 0 -1px 0 var(--tile-rim-bot),
+    inset 0 0 18px oklch(0 0 0 / 0.06);
+}
+/* Slightly stronger horizontal hinge stack shadow for dashboard rows only */
+.row-flap.board-tile::after {
+  height: 3px;
+  bottom: -3px;
+  background: linear-gradient(180deg,
+    oklch(0 0 0 / 0.45) 0%,
+    oklch(0 0 0 / 0) 100%);
+}
+.light .row-flap.board-tile::after {
+  background: linear-gradient(180deg,
+    oklch(0 0 0 / 0.16) 0%,
+    oklch(0 0 0 / 0) 100%);
+}
+
+/* ============================================================
+ * POSITION column marquee — animates only on row hover, only when
+ * the role text overflows the cell. One-direction, smooth, single
+ * pass that ends fully revealed. No other column animates.
+ * ============================================================ */
+.position-marquee {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  container-type: inline-size;
+  mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
+}
+.position-marquee-inner {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: middle;
+  will-change: transform;
+  transform: translateX(0);
+}
+.row-flap:hover .position-marquee-inner {
+  text-overflow: clip;
+  overflow: visible;
+  max-width: none;
+  /* one-shot, single direction; min() ensures non-overflowing text doesn't move */
+  animation: position-scroll 6s linear forwards;
+}
+@keyframes position-scroll {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(0); }
+  100% { transform: translateX(min(0px, calc(100cqw - 100%))); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-flap:hover .position-marquee-inner { animation: none; }
+}
+
+/* ============ Font modes (offline, system fonts only) ============ */
+/* Default = mono terminal (already set by --font-mono).
+   .font-board = airport split-flap operational display, system stack only. */
+/* Alternate font: BP Mono Regular — typewriter / mechanical terminal /
+   airport info-board feel. Uses a local-only fallback stack so the app
+   stays fully offline. No external @font-face URLs. */
+html.font-board {
+  --font-mono: "BP Mono Regular", "BPmono", "Courier Prime", "Courier New", "IBM Plex Mono", "Andale Mono", ui-monospace, monospace;
+  --font-display: "BP Mono Regular", "BPmono", "Courier Prime", "Courier New", "IBM Plex Mono", "Andale Mono", ui-monospace, monospace;
+}
+html.font-board,
+html.font-board body,
+html.font-board .flap-text,
+html.font-board input,
+html.font-board textarea,
+html.font-board select,
+html.font-board button,
+html.font-board label,
+html.font-board a,
+html.font-board span,
+html.font-board p,
+html.font-board h1,
+html.font-board h2,
+html.font-board h3,
+html.font-board h4,
+html.font-board h5,
+html.font-board h6,
+html.font-board td,
+html.font-board th,
+html.font-board li {
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.04em;
+}
+html.font-board .flap-text {
+  font-weight: 400;
+  letter-spacing: 0.10em;
+}
+
+
+/* ============================================================
+ * SIDE RAIL — collapsed by default, hover-to-expand
+ * ============================================================ */
+.side-rail {
+  width: 3.25rem;
+  transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.side-rail:hover,
+.side-rail:focus-within {
+  width: 11rem;
+}
+.side-rail__label {
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 200ms ease, max-width 280ms ease;
+}
+.side-rail:hover .side-rail__label,
+.side-rail:focus-within .side-rail__label {
+  opacity: 1;
+  max-width: 12rem;
+}
+.side-rail__btn {
+  justify-content: flex-start;
+}
+
+/* ============================================================
+ * AIRPORT / STATION INFORMATION BOARD
+ * Continuous modular display strips — used ONLY for job rows
+ * on Dashboard and Applications. Scoped by .ab-* classes.
+ * ============================================================ */
+.ab-screen {
+  --ab-gap: 2px;
+  --ab-cols: 46; /* 12 + 3 + 20 + 11 */
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  padding: 6px 4px;
+  box-shadow: none;
+}
+.light .ab-screen {
+  background: oklch(0.88 0.005 90);
+}
+
+.ab-header-row {
+  display: grid;
+  grid-template-columns: repeat(var(--ab-cols), minmax(0, 1fr));
+  column-gap: var(--ab-gap);
+  padding: 2px 2px 6px;
+  margin-bottom: 4px;
+}
+.ab-header-row > div {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: oklch(0.88 0.20 92); /* yellow */
+  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6);
+}
+.light .ab-header-row > div {
+  color: oklch(0.55 0.18 80);
+  text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
+}
+
+.ab-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ab-gap);
+}
+
+/* Row strip — single grid, every column is one cell-width */
+.ab-row {
+  display: grid;
+  grid-template-columns: repeat(var(--ab-cols), minmax(0, 1fr));
+  column-gap: var(--ab-gap);
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+.ab-row:hover { filter: brightness(1.12); }
+.light .ab-row:hover { filter: brightness(0.97); }
+.ab-row.is-selected {
+  outline: 1px solid color-mix(in oklab, var(--amber) 80%, transparent);
+  outline-offset: -1px;
+}
+
+/* Field container — tight, rectangular */
+.ab-field {
+  position: relative;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 0;
+}
+.ab-cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--slots), minmax(0, 1fr));
+  column-gap: var(--ab-gap);
+  pointer-events: none;
+}
+.ab-cell {
+  background: oklch(0.18 0.004 270); /* slightly lighter than pure black */
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.55);
+}
+.light .ab-cell {
+  background: oklch(0.22 0.008 265);
+}
+
+.ab-text {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--chars), minmax(0, 1fr));
+  column-gap: var(--ab-gap);
+  height: 100%;
+  width: calc(var(--chars) / var(--slots) * 100% + (var(--chars) - var(--slots)) * var(--ab-gap));
+  min-width: 100%;
+  align-items: stretch;
+  pointer-events: none;
+  will-change: transform;
+}
+.ab-ch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: oklch(0.94 0.04 85);
+  text-shadow: 0 0 5px oklch(0.78 0.16 80 / 0.25);
+}
+.light .ab-ch {
+  color: oklch(0.94 0.04 85);
+  text-shadow: 0 0 6px oklch(0 0 0 / 0.5);
+}
+
+/* Favorite — text only goes orange. Status keeps its own colors. */
+.ab-ch--fav {
+  color: oklch(0.78 0.18 70) !important;
+  text-shadow: 0 0 6px oklch(0.78 0.18 70 / 0.45) !important;
+}
+
+/* Slot-by-slot scrolling — chars advance under fixed cell layer */
+.ab-row:hover .ab-field--marquee .ab-text,
+.ab-row:focus-within .ab-field--marquee .ab-text {
+  animation: ab-slot-scroll 6s steps(var(--chars), end) 200ms 1 forwards;
+}
+@keyframes ab-slot-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(calc((var(--slots) - var(--chars)) * (100% / var(--chars)))); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ab-row:hover .ab-field--marquee .ab-text { animation: none; }
+}
+
+/* Status — same panel system, colored TEXT (not background) */
+.ab-ch--status { font-weight: 700; }
+.ab-ch--status-APPLIED    { color: oklch(0.74 0.18 250) !important; text-shadow: 0 0 6px oklch(0.74 0.18 250 / 0.45) !important; }
+.ab-ch--status-OFFER      { color: oklch(0.80 0.22 145) !important; text-shadow: 0 0 6px oklch(0.80 0.22 145 / 0.5) !important; }
+.ab-ch--status-INTERVIEW  { color: oklch(0.74 0.22 295) !important; text-shadow: 0 0 6px oklch(0.74 0.22 295 / 0.45) !important; }
+.ab-ch--status-FOLLOWUP   { color: oklch(0.78 0.18 50)  !important; text-shadow: 0 0 6px oklch(0.78 0.18 50 / 0.45)  !important; }
+.ab-ch--status-WAITING    { color: oklch(0.85 0.20 90)  !important; text-shadow: 0 0 6px oklch(0.85 0.20 90 / 0.45)  !important; }
+.ab-ch--status-REJECTED   { color: oklch(0.72 0.22 25)  !important; text-shadow: 0 0 6px oklch(0.72 0.22 25 / 0.45)  !important; }
+.ab-ch--status-SAVED      { color: oklch(0.75 0.02 270) !important; text-shadow: none !important; }
+.ab-ch--status-ASSESSMENT { color: oklch(0.85 0.20 95)  !important; text-shadow: 0 0 6px oklch(0.85 0.20 95 / 0.45)  !important; }
+
+
+
+/* Continuous black dashboard screen — no framed look */
+.dashboard-screen {
+  background: #000;
+  border-radius: 6px;
+  border: 0;
+  box-shadow: none;
+}
+.light .dashboard-screen {
+  background: oklch(0.92 0.005 90);
 }

@@ -8,7 +8,9 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 
+import { useEffect } from "react";
 import appCss from "../styles.css?url";
+import { registerOfflineSW } from "@/lib/registerSW";
 
 function NotFoundComponent() {
   return (
@@ -72,20 +74,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#0b0d10" },
       { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { name: "description", content: "A premium, offline-first web app for tracking international job applications." },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:description", content: "A premium, offline-first web app for tracking international job applications." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:description", content: "A premium, offline-first web app for tracking international job applications." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c330bc12-0860-4113-8546-a9f9957b9f5b/id-preview-008eae40--b7c01dfa-e547-4c6c-99a5-52ade2918b55.lovable.app-1778661497712.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/c330bc12-0860-4113-8546-a9f9957b9f5b/id-preview-008eae40--b7c01dfa-e547-4c6c-99a5-52ade2918b55.lovable.app-1778661497712.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
@@ -110,6 +115,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => { registerOfflineSW(); }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

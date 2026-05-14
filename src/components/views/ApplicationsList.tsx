@@ -100,29 +100,48 @@ export function ApplicationsList({ scope = "ACTIVE" }: { scope?: "ACTIVE" | "ALL
 }
 
 function ApplicationsBoard({ rows }: { rows: ReturnType<typeof applyFilters> }) {
-  // Mirror the Dashboard's two-column board layout so panels stay rectangular
-  // (wider than tall) at large widths and don't render as squashed squares.
-  const mid = Math.ceil(rows.length / 2);
-  const left = rows.slice(0, mid);
-  const right = rows.slice(mid);
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      <Column rows={left} />
-      {right.length > 0 && <Column rows={right} />}
-    </div>
-  );
-}
-
-function Column({ rows }: { rows: ReturnType<typeof applyFilters> }) {
+  // Single full-width airport board (NOT a two-column dashboard).
+  // Each row is followed by a thin meta strip with timestamps so the
+  // Applications page carries denser information than the Dashboard.
   return (
     <AirportScreen>
       <AirportHeaderRow />
       <div className="ab-rows">
         {rows.map((a) => (
-          <AirportBoardRow key={a.id} app={a} />
+          <ApplicationRow key={a.id} app={a} />
         ))}
       </div>
     </AirportScreen>
+  );
+}
+
+function ApplicationRow({ app }: { app: import("@/lib/types").Application }) {
+  const updated = app.updatedAt || app.createdAt;
+  const lastStatus =
+    app.statusChangedAt ||
+    (app.statusHistory && app.statusHistory.length > 0
+      ? app.statusHistory[app.statusHistory.length - 1].ts
+      : undefined) ||
+    app.updatedAt ||
+    app.createdAt;
+  const fmt = (iso?: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
+      year: "2-digit", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
+  };
+  return (
+    <div className="ab-app-row-wrap">
+      <AirportBoardRow app={app} />
+      <div className="ab-app-meta">
+        <span className="ab-app-meta__fav">{app.pinned ? "★ FAVORITE" : ""}</span>
+        <span><em>UPDATED</em> {fmt(updated)}</span>
+        <span><em>STATUS SINCE</em> {fmt(lastStatus)}</span>
+      </div>
+    </div>
   );
 }
 

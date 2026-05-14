@@ -185,12 +185,14 @@ function EmptyPanels({ count }: { count: number }) {
 }
 
 function StatusField({ value }: { value: Status }) {
+  const isWaiting = value === "WAITING";
+  const displayText = isWaiting ? "..." : value;
   return (
     <AirportField
-      text={value}
+      text={displayText}
       spec={FIELD_SPECS.status}
       fieldClass="ab-field--status"
-      charClass={`ab-ch--status ab-ch--status-${value.replace(/[^A-Z]/g, "")}`}
+      charClass={`ab-ch--status ab-ch--status-${value.replace(/[^A-Z]/g, "")}${isWaiting ? " ab-ch--waiting-dot" : ""}`}
     />
   );
 }

@@ -688,17 +688,19 @@ html.font-board .flap-text {
   text-shadow: 0 0 6px oklch(0.78 0.18 70 / 0.45) !important;
 }
 
-/* Slot-by-slot scrolling — chars advance under fixed cell layer */
+/* Smooth, GPU-friendly slide — chars glide under the fixed cell layer.
+   Triggers only on hover/focus of the row, only on overflowing fields. */
 .ab-row:hover .ab-field--marquee .ab-text,
 .ab-row:focus-within .ab-field--marquee .ab-text {
-  animation: ab-slot-scroll 6s steps(var(--chars), end) 200ms 1 forwards;
+  animation: ab-slot-scroll 8s cubic-bezier(0.45, 0, 0.55, 1) 250ms 1 forwards;
 }
 @keyframes ab-slot-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(calc((var(--slots) - var(--chars)) * (100% / var(--chars)))); }
+  0%, 8%   { transform: translateX(0); }
+  92%, 100% { transform: translateX(calc((var(--slots) - var(--chars)) * (100% / var(--chars)))); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ab-row:hover .ab-field--marquee .ab-text { animation: none; }
+  .ab-row:hover .ab-field--marquee .ab-text,
+  .ab-row:focus-within .ab-field--marquee .ab-text { animation: none; }
 }
 
 /* Status — same panel system, colored TEXT (not background).

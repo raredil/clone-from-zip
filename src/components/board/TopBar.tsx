@@ -36,7 +36,9 @@ export function TopBar() {
       <div className="flex items-center gap-3 mr-2">
         <PlaneIcon />
         <div className="flex flex-col">
-          <h1 className="flap-text text-[clamp(1.6rem,3vw,2.4rem)] tracking-[0.32em] leading-none text-amber font-extrabold">CAREER BOARD</h1>
+          <h1
+            className="text-[clamp(1.6rem,3vw,2.4rem)] tracking-[0.32em] leading-none text-amber font-extrabold uppercase career-board-title"
+          >CAREER BOARD</h1>
           <div className="flap-text text-[10px] tracking-[0.3em] text-foreground mt-1">NEXT ROLE READY</div>
         </div>
       </div>
@@ -155,7 +157,7 @@ function countActiveFilters(f: import("@/lib/types").FilterState): number {
 
 function PlaneIcon() {
   return (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-amber career-board-plane">
       <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" />
     </svg>
   );

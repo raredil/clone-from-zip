@@ -104,14 +104,14 @@ function ApplicationsBoard({ rows }: { rows: ReturnType<typeof applyFilters> }) 
   // Each row is followed by a thin meta strip with timestamps so the
   // Applications page carries denser information than the Dashboard.
   return (
-    <AirportScreen>
+    <div className="ab-screen ab-screen--apps">
       <AirportHeaderRow />
       <div className="ab-rows">
         {rows.map((a) => (
           <ApplicationRow key={a.id} app={a} />
         ))}
       </div>
-    </AirportScreen>
+    </div>
   );
 }
 

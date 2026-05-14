@@ -133,14 +133,14 @@
   --amber: oklch(0.78 0.16 80);
   --amber-soft: oklch(0.62 0.13 75);
 
-  --status-applied: oklch(0.45 0.16 245);
-  --status-interview: oklch(0.46 0.17 295);
-  --status-followup: oklch(0.50 0.16 55);
-  --status-saved: oklch(0.40 0.012 90);
-  --status-offer: oklch(0.46 0.16 150);
-  --status-rejected: oklch(0.50 0.20 25);
-  --status-waiting: oklch(0.50 0.15 70);
-  --status-assessment: oklch(0.50 0.16 90);
+  --status-applied: oklch(0.30 0.012 90);
+  --status-interview: oklch(0.42 0.18 245);
+  --status-followup: oklch(0.55 0.18 90);
+  --status-saved: oklch(0.42 0.005 270);
+  --status-offer: oklch(0.46 0.20 150);
+  --status-rejected: oklch(0.50 0.22 27);
+  --status-waiting: oklch(0.50 0.10 90);
+  --status-assessment: oklch(0.42 0.18 265);
 
   --tile-top: oklch(0.965 0.004 90);
   --tile-mid-top: oklch(0.935 0.004 90);

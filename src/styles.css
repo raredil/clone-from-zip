@@ -172,15 +172,10 @@
 
 /* ============ Bezel ============ */
 .board-frame {
-  background: linear-gradient(180deg, var(--board-bezel),
-    color-mix(in oklab, var(--board-bezel) 70%, black));
+  background: var(--board-bezel);
   border: 1px solid color-mix(in oklab, var(--board-bezel) 60%, white 6%);
   border-radius: 14px;
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--board-bezel) 40%, white 15%),
-    inset 0 -1px 0 oklch(0 0 0 / 0.55),
-    0 30px 60px -22px oklch(0 0 0 / 0.55),
-    0 0 0 1px oklch(0 0 0 / 0.35);
+  box-shadow: 0 1px 0 oklch(0 0 0 / 0.25);
   position: relative;
 }
 /* Decorative bezel screws intentionally removed for a cleaner, modern look */

@@ -585,8 +585,10 @@ export async function wipeAll() {
   state.timer = defaultTimer();
   state.session = defaultSession();
   state.sessionSummary = null;
-  state.settings = { notifications: true, sound: true };
-  // Wipe IndexedDB stores
+  // Preserve theme/font preferences across a wipe.
+  const keptTheme = state.settings.theme;
+  const keptFont = state.settings.font;
+  state.settings = { notifications: true, sound: true, theme: keptTheme, font: keptFont };
   try {
     const d = await db.getDB();
     await Promise.all([
@@ -596,16 +598,16 @@ export async function wipeAll() {
       d.clear("kv"),
     ]);
   } catch {/* ignore */}
-  // Wipe localStorage mirror
   if (typeof localStorage !== "undefined") {
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith("cb:")) keys.push(k);
+      if (k && k.startsWith("cb:") && k !== "cb:seeded") keys.push(k);
     }
     keys.forEach((k) => localStorage.removeItem(k));
+    // Keep the sentinel so we never re-seed sample data after a user wipe.
+    localStorage.setItem("cb:seeded", "1");
   }
-  // Re-seed an empty timer/settings persistence
   await db.setTimer(state.timer);
   await db.setSettings(state.settings);
   emit();

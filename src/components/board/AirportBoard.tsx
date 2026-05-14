@@ -30,10 +30,14 @@ export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
 
 /** Empty modular panels flanking the STATUS field (left + right). */
 const STATUS_PAD_SLOTS = 2;
+/** Empty modular panels flanking the DESTINATION field (left + right). */
+const DEST_PAD_SLOTS = 3;
 
 export const TOTAL_COLS =
   FIELD_SPECS.flight.slots +
+  DEST_PAD_SLOTS +
   FIELD_SPECS.destination.slots +
+  DEST_PAD_SLOTS +
   FIELD_SPECS.position.slots +
   STATUS_PAD_SLOTS +
   FIELD_SPECS.status.slots +
@@ -43,7 +47,9 @@ export function AirportHeaderRow() {
   return (
     <div className="ab-header-row">
       <div style={{ gridColumn: `span ${FIELD_SPECS.flight.slots}` }}>FLIGHT</div>
-      <div style={{ gridColumn: `span ${FIELD_SPECS.destination.slots}` }}>DEST</div>
+      <div style={{ gridColumn: `span ${DEST_PAD_SLOTS}` }} aria-hidden="true" />
+      <div style={{ gridColumn: `span ${FIELD_SPECS.destination.slots}` }}>DST</div>
+      <div style={{ gridColumn: `span ${DEST_PAD_SLOTS}` }} aria-hidden="true" />
       <div style={{ gridColumn: `span ${FIELD_SPECS.position.slots}` }}>POSITION</div>
       <div style={{ gridColumn: `span ${STATUS_PAD_SLOTS}` }} aria-hidden="true" />
       <div style={{ gridColumn: `span ${FIELD_SPECS.status.slots}` }}>STATUS</div>

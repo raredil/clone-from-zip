@@ -649,7 +649,7 @@ html.font-board .flap-text {
   min-width: 100%;
   align-items: stretch;
   pointer-events: none;
-  will-change: transform;
+  /* will-change applied only on hover via the marquee selector to save GPU memory */
 }
 .ab-ch {
   display: flex;

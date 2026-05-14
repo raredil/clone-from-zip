@@ -407,6 +407,20 @@ export function exportXLSX(apps: Application[], filename: string) {
     (ws[addr] as Record<string, unknown>).s = headerStyle;
   }
 
+  // Color every cell in REJECTED rows red — only color, no other format change.
+  const rejectedFont = { color: { rgb: "FFC81E1E" }, name: "Calibri", sz: 11 };
+  apps.forEach((a, i) => {
+    if (a.status !== "REJECTED") return;
+    const r = i + 1; // header is row 0
+    for (let c = 0; c < headers.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      if (!ws[addr]) continue;
+      const cell = ws[addr] as Record<string, unknown>;
+      const prev = (cell.s as Record<string, unknown>) || {};
+      cell.s = { ...prev, font: { ...(prev.font as object || {}), ...rejectedFont } };
+    }
+  });
+
   // Freeze header row + enable sortable autofilter across the data range
   const lastRow = rows.length; // header is row 0
   const lastColLetter = XLSX.utils.encode_col(headers.length - 1);

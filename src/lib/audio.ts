@@ -159,12 +159,17 @@ export function playCue(success: boolean) {
   playOnce(success);
 }
 
-/** Start a repeating, dismissable alert (used at end of normal session). */
-export function startAlertSound(success: boolean) {
+/** Start a repeating, dismissable alert. Loops every `intervalMs` until
+ *  `stopAlertSound()` is called, or until `maxMs` elapses (null = no limit). */
+export function startAlertSound(success: boolean, opts?: { intervalMs?: number; maxMs?: number | null }) {
   stopAlertSound();
+  const intervalMs = opts?.intervalMs ?? 4000;
+  const maxMs = opts?.maxMs === undefined ? 30000 : opts.maxMs;
   playOnce(success);
-  loopTimer = setInterval(() => playOnce(success), 4000);
-  autoStop = setTimeout(() => stopAlertSound(), 30000);
+  loopTimer = setInterval(() => playOnce(success), intervalMs);
+  if (maxMs !== null && maxMs > 0) {
+    autoStop = setTimeout(() => stopAlertSound(), maxMs);
+  }
 }
 
 export function stopAlertSound() {

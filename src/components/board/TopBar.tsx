@@ -37,7 +37,7 @@ export function TopBar() {
         <PlaneIcon />
         <div className="flex flex-col">
           <h1
-            className="text-[clamp(1.6rem,3vw,2.4rem)] tracking-[0.32em] leading-none text-amber font-extrabold uppercase career-board-title"
+            className="text-[clamp(2.2rem,4.5vw,3.6rem)] tracking-[0.32em] leading-none text-amber font-extrabold uppercase career-board-title"
           >DEPARTURE</h1>
           <div className="flap-text text-[10px] tracking-[0.3em] text-foreground mt-1">NEXT ROLE READY</div>
         </div>

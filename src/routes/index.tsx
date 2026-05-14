@@ -12,6 +12,7 @@ import { ApplicationsList } from "@/components/views/ApplicationsList";
 import { useInitStore, useStore, stopAlert } from "@/lib/store";
 import { applyFilters } from "@/lib/filter";
 import { useThemeSync } from "@/lib/theme";
+import { ViewBoundary } from "@/components/ViewBoundary";
 
 // Lazy-load heavy panels — keeps initial dashboard render fast.
 const Analytics = lazy(() => import("@/components/views/Analytics").then((m) => ({ default: m.Analytics })));
@@ -53,6 +54,7 @@ function Index() {
             </div>
           ) : (
             <>
+            <ViewBoundary viewKey={view}>
               {view === "DASHBOARD" && (
                 <div className="dashboard-screen p-2 lg:p-3">
                   <Board />
@@ -69,6 +71,7 @@ function Index() {
               {view === "DOCUMENTS" && <ViewWrap title="DOCUMENTS"><ApplicationsList scope="DOCS" /></ViewWrap>}
               {view === "ARCHIVE" && <ViewWrap title="ARCHIVE"><ApplicationsList scope="ARCHIVE" /></ViewWrap>}
               {view === "SETTINGS" && <ViewWrap title="SETTINGS"><Suspense fallback={<PanelFallback />}><SettingsView /></Suspense></ViewWrap>}
+            </ViewBoundary>
             </>
           )}
         </main>

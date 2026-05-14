@@ -1,0 +1,13 @@
+{
+  "name": "Career Board",
+  "short_name": "Career Board",
+  "description": "Offline split-flap career command center",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }
+  ]
+}

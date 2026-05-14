@@ -65,7 +65,17 @@ if (typeof window !== "undefined") {
   );
 }
 
-// Apps
+// ----- Internal: restore from LS into IDB -----
+async function restoreToIDB<T>(store: "apps" | "activity" | "presets", rows: T[]) {
+  try {
+    const db = await getDB();
+    const tx = db.transaction(store, "readwrite");
+    await Promise.all(rows.map((r) => tx.store.put(r as never)));
+    await tx.done;
+  } catch {/* ignore */}
+}
+
+// ============= Apps =============
 export async function getAllApps(): Promise<Application[]> {
   let fromIdb: Application[] | null = null;
   try {
@@ -75,16 +85,14 @@ export async function getAllApps(): Promise<Application[]> {
     fromIdb = null;
   }
   const fromLs = readLS("apps", [] as Application[]);
-  // Recovery: if IDB is empty but the localStorage backup has data, restore.
-  // This protects against IDB eviction / fresh-DB after browser cleanup.
+  // Recovery: if IDB is empty/unavailable but LS backup has data, restore.
   if ((!fromIdb || fromIdb.length === 0) && fromLs.length > 0) {
-    try {
-      const db = await getDB();
-      const tx = db.transaction("apps", "readwrite");
-      await Promise.all(fromLs.map((a) => tx.store.put(a)));
-      await tx.done;
-    } catch {/* ignore */}
+    await restoreToIDB("apps", fromLs);
     return fromLs;
+  }
+  // Keep LS in sync if it's stale relative to IDB.
+  if (fromIdb && fromIdb.length > 0 && fromLs.length === 0) {
+    writeLS("apps", fromIdb);
   }
   return fromIdb ?? fromLs;
 }
@@ -94,11 +102,12 @@ export async function putApp(app: Application) {
     const db = await getDB();
     await db.put("apps", app);
   } catch {/* ignore */}
-  // mirror to LS as backup
-  const all = await getAllApps();
-  const idx = all.findIndex((a) => a.id === app.id);
-  if (idx >= 0) all[idx] = app; else all.push(app);
-  writeLS("apps", all);
+  // mirror to LS as backup using read-modify-write on LS only (avoid
+  // re-reading IDB which can be slow under load).
+  const arr = readLS<Application[]>("apps", []);
+  const idx = arr.findIndex((a) => a.id === app.id);
+  if (idx >= 0) arr[idx] = app; else arr.push(app);
+  writeLS("apps", arr);
 }
 
 export async function deleteApp(id: string) {
@@ -106,8 +115,7 @@ export async function deleteApp(id: string) {
     const db = await getDB();
     await db.delete("apps", id);
   } catch {/* ignore */}
-  const all = (await getAllApps()).filter((a) => a.id !== id);
-  writeLS("apps", all);
+  writeLS("apps", readLS<Application[]>("apps", []).filter((a) => a.id !== id));
 }
 
 export async function bulkPutApps(apps: Application[]) {
@@ -120,15 +128,30 @@ export async function bulkPutApps(apps: Application[]) {
   writeLS("apps", apps);
 }
 
-// Activity
-export async function getAllActivity(): Promise<ActivityEntry[]> {
+export async function clearAllApps() {
   try {
     const db = await getDB();
-    const all = await db.getAll("activity");
-    return all.sort((a, b) => b.ts.localeCompare(a.ts));
+    await db.clear("apps");
+  } catch {/* ignore */}
+  writeLS("apps", []);
+}
+
+// ============= Activity =============
+export async function getAllActivity(): Promise<ActivityEntry[]> {
+  let fromIdb: ActivityEntry[] | null = null;
+  try {
+    const db = await getDB();
+    fromIdb = await db.getAll("activity");
   } catch {
-    return readLS("activity", [] as ActivityEntry[]);
+    fromIdb = null;
   }
+  const fromLs = readLS("activity", [] as ActivityEntry[]);
+  if ((!fromIdb || fromIdb.length === 0) && fromLs.length > 0) {
+    await restoreToIDB("activity", fromLs);
+    return [...fromLs].sort((a, b) => b.ts.localeCompare(a.ts));
+  }
+  const all = fromIdb ?? fromLs;
+  return [...all].sort((a, b) => b.ts.localeCompare(a.ts));
 }
 export async function pushActivity(e: ActivityEntry) {
   try {
@@ -140,15 +163,26 @@ export async function pushActivity(e: ActivityEntry) {
   writeLS("activity", arr.slice(0, 1000));
 }
 
-// KV (timer, settings)
+// ============= KV (timer, settings) =============
 export async function kvGet<T>(key: string, fallback: T): Promise<T> {
+  let fromIdb: T | undefined;
   try {
     const db = await getDB();
-    const v = await db.get("kv", key);
-    return (v ?? fallback) as T;
+    fromIdb = (await db.get("kv", key)) as T | undefined;
   } catch {
-    return readLS(`kv:${key}`, fallback);
+    fromIdb = undefined;
   }
+  if (fromIdb !== undefined && fromIdb !== null) return fromIdb;
+  // LS recovery — and migrate back into IDB
+  const ls = readLS<T | undefined>(`kv:${key}`, undefined);
+  if (ls !== undefined && ls !== null) {
+    try {
+      const db = await getDB();
+      await db.put("kv", ls, key);
+    } catch {/* ignore */}
+    return ls;
+  }
+  return fallback;
 }
 export async function kvSet<T>(key: string, value: T) {
   try {
@@ -171,14 +205,21 @@ export async function setSettings(s: Settings) {
   return kvSet("settings", s);
 }
 
-// Presets
+// ============= Presets =============
 export async function getPresets(): Promise<FilterPreset[]> {
+  let fromIdb: FilterPreset[] | null = null;
   try {
     const db = await getDB();
-    return await db.getAll("presets");
+    fromIdb = await db.getAll("presets");
   } catch {
-    return readLS("presets", [] as FilterPreset[]);
+    fromIdb = null;
   }
+  const fromLs = readLS("presets", [] as FilterPreset[]);
+  if ((!fromIdb || fromIdb.length === 0) && fromLs.length > 0) {
+    await restoreToIDB("presets", fromLs);
+    return fromLs;
+  }
+  return fromIdb ?? fromLs;
 }
 export async function putPreset(p: FilterPreset) {
   try {
@@ -198,7 +239,7 @@ export async function deletePreset(id: string) {
   writeLS("presets", readLS<FilterPreset[]>("presets", []).filter((p) => p.id !== id));
 }
 
-// LS helpers
+// ============= LS helpers =============
 function readLS<T>(key: string, fallback: T): T {
   if (typeof localStorage === "undefined") return fallback;
   try {

@@ -778,3 +778,26 @@ html.font-board .flap-text {
 }
 .light .ab-app-meta em { color: oklch(0.45 0.16 75); text-shadow: none; }
 .light .ab-app-meta__fav { color: oklch(0.50 0.18 70); text-shadow: none; }
+
+/* CAREER BOARD title — match board content (display mono) + refined glow */
+.career-board-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.32em;
+  text-shadow:
+    0 0 6px oklch(0.85 0.18 85 / 0.55),
+    0 0 18px oklch(0.80 0.18 80 / 0.30),
+    0 1px 0 oklch(0 0 0 / 0.55);
+}
+.light .career-board-title {
+  text-shadow:
+    0 0 6px oklch(0.78 0.18 80 / 0.45),
+    0 1px 0 oklch(1 0 0 / 0.55);
+}
+.career-board-plane {
+  filter:
+    drop-shadow(0 0 4px oklch(0.85 0.18 85 / 0.6))
+    drop-shadow(0 0 10px oklch(0.80 0.18 80 / 0.35));
+}
+.light .career-board-plane {
+  filter: drop-shadow(0 0 4px oklch(0.78 0.18 80 / 0.45));
+}

@@ -297,6 +297,7 @@ export function generatePDF(
     const roleRaw = (a.role    || "—").toUpperCase();
     const status  = a.status;
     const applied = a.appliedAt ? a.appliedAt.slice(0, 10) : "—";
+    const isRejected = status === "REJECTED";
 
     doc.setFont(FONT, "normal");
     doc.setFontSize(8);
@@ -308,22 +309,23 @@ export function generatePDF(
     ensureSpace(rowHeight);
     if (y === TOP_MARGIN) drawColumnHeaders();
 
-    doc.setTextColor(150, 150, 150);
+    // REJECTED rows: paint every cell in red. Otherwise keep original tones.
+    doc.setTextColor(isRejected ? 200 : 150, isRejected ? 40 : 150, isRejected ? 40 : 150);
     doc.text(idx, colX.idx, y);
 
-    doc.setTextColor(25, 28, 36);
+    if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(25, 28, 36);
     doc.text(truncate(doc, company, colW.company), colX.company, y);
 
-    doc.setTextColor(80, 84, 92);
+    if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(80, 84, 92);
     doc.text(truncate(doc, country, colW.country), colX.country, y);
 
-    doc.setTextColor(40, 44, 52);
+    if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(40, 44, 52);
     doc.text(roleLines, colX.role, y);
 
-    doc.setTextColor(60, 64, 72);
+    if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(60, 64, 72);
     doc.text(truncate(doc, status, colW.status), colX.status, y);
 
-    doc.setTextColor(110, 114, 122);
+    if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(110, 114, 122);
     doc.text(applied, colX.applied, y);
 
     y += rowHeight;

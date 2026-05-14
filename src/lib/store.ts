@@ -406,7 +406,7 @@ function finishCycle() {
   // Normal mode: end the session, show summary
   notify(success ? "Session complete" : "Session ended",
     success ? `Great work — ${t.mode} goal met` : `No new ${t.mode === "SEARCH" ? "jobs" : "applications"} this cycle`);
-  if (state.timer.soundOn) startAlertSound(success);
+  if (state.timer.soundOn) startAlertSound(success, { intervalMs: 3000, maxMs: null });
   state.alertActive = true;
   const ended: SessionState = {
     ...state.session,

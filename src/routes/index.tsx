@@ -22,6 +22,7 @@ const Exports = lazy(() => import("@/components/views/Exports").then((m) => ({ d
 const SettingsView = lazy(() => import("@/components/views/Settings").then((m) => ({ default: m.Settings })));
 
 export const Route = createFileRoute("/")({
+  ssr: false,
   component: Index,
 });
 

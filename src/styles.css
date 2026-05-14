@@ -557,7 +557,7 @@ html.font-board .flap-text {
  * ============================================================ */
 .ab-screen {
   --ab-gap: 2px;
-  --ab-cols: 50; /* 12 + 3 + 20 + 2(empty) + 11 + 2(empty) */
+  --ab-cols: 56; /* 12 + 3(pad) + 3 + 3(pad) + 20 + 2(pad) + 11 + 2(pad) */
   background: #000;
   border: 0;
   border-radius: 0;
@@ -567,6 +567,10 @@ html.font-board .flap-text {
 .light .ab-screen {
   background: oklch(0.88 0.005 90);
 }
+
+/* Applications page — tighter character rhythm so words read connected */
+.ab-screen--apps { --ab-gap: 1px; }
+.ab-screen--apps .ab-ch { letter-spacing: -0.06em; }
 
 .ab-header-row {
   display: grid;
@@ -578,14 +582,14 @@ html.font-board .flap-text {
 .ab-header-row > div {
   text-align: center;
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 900;
   font-size: 16px;
   letter-spacing: 0.32em;
   color: oklch(0.88 0.20 92); /* yellow */
-  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6), 0 0 10px oklch(0.85 0.20 92 / 0.35);
+  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6), 0 0 10px oklch(0.85 0.20 92 / 0.4);
 }
 .light .ab-header-row > div {
-  color: oklch(0.55 0.18 80);
+  color: oklch(0.50 0.18 80);
   text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
 }
 @media (max-width: 720px) {

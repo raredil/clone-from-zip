@@ -150,7 +150,26 @@ function AirportBoardRowImpl({ app }: RowProps) {
         fieldClass="ab-field--position"
         charClass={fav ? "ab-ch--fav" : undefined}
       />
+      <EmptyPanels count={STATUS_PAD_SLOTS} />
       <StatusField value={app.status} />
+      <EmptyPanels count={STATUS_PAD_SLOTS} />
+    </div>
+  );
+}
+
+function EmptyPanels({ count }: { count: number }) {
+  const style = {
+    ["--slots" as string]: String(count),
+    ["--chars" as string]: String(count),
+    gridColumn: `span ${count}`,
+  } as React.CSSProperties;
+  return (
+    <div className="ab-field ab-field--empty" style={style} aria-hidden="true">
+      <div className="ab-cells">
+        {Array.from({ length: count }).map((_, i) => (
+          <span key={i} className="ab-cell" />
+        ))}
+      </div>
     </div>
   );
 }

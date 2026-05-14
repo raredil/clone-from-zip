@@ -708,16 +708,27 @@ html.font-board .flap-text {
 
 /* Status — same panel system, colored TEXT (not background) */
 .ab-ch--status { font-weight: 700; }
-.ab-ch--status-APPLIED    { color: oklch(0.74 0.18 250) !important; text-shadow: 0 0 8px oklch(0.74 0.20 250 / 0.75), 0 0 16px oklch(0.74 0.20 250 / 0.35) !important; }
-.ab-ch--status-OFFER      { color: oklch(0.80 0.22 145) !important; text-shadow: 0 0 8px oklch(0.80 0.22 145 / 0.8), 0 0 16px oklch(0.80 0.22 145 / 0.4) !important; }
-.ab-ch--status-INTERVIEW  { color: oklch(0.74 0.22 295) !important; text-shadow: 0 0 8px oklch(0.74 0.22 295 / 0.75), 0 0 16px oklch(0.74 0.22 295 / 0.35) !important; }
-.ab-ch--status-REJECTED   { color: oklch(0.72 0.22 25)  !important; text-shadow: 0 0 8px oklch(0.72 0.22 25 / 0.75), 0 0 16px oklch(0.72 0.22 25 / 0.35)  !important; }
-.ab-ch--status-ASSESSMENT { color: oklch(0.85 0.20 95)  !important; text-shadow: 0 0 8px oklch(0.85 0.20 95 / 0.75), 0 0 16px oklch(0.85 0.20 95 / 0.35)  !important; }
+.ab-ch--status-APPLIED    { color: oklch(0.72 0.24 250) !important; text-shadow: 0 0 8px oklch(0.72 0.24 250 / 0.85), 0 0 16px oklch(0.72 0.24 250 / 0.45) !important; }
+.ab-ch--status-OFFER      { color: oklch(0.78 0.28 145) !important; text-shadow: 0 0 8px oklch(0.78 0.28 145 / 0.9),  0 0 16px oklch(0.78 0.28 145 / 0.5)  !important; }
+.ab-ch--status-INTERVIEW  { color: oklch(0.72 0.28 295) !important; text-shadow: 0 0 8px oklch(0.72 0.28 295 / 0.85), 0 0 16px oklch(0.72 0.28 295 / 0.45) !important; }
+.ab-ch--status-REJECTED   { color: oklch(0.62 0.27 27)  !important; text-shadow: 0 0 8px oklch(0.62 0.27 27 / 0.9),   0 0 16px oklch(0.62 0.27 27 / 0.5)   !important; }
+.ab-ch--status-ASSESSMENT { color: oklch(0.85 0.22 95)  !important; text-shadow: 0 0 8px oklch(0.85 0.22 95 / 0.85),  0 0 16px oklch(0.85 0.22 95 / 0.45)  !important; }
 /* Dim glow only */
-.ab-ch--status-FOLLOWUP   { color: oklch(0.78 0.18 50)  !important; text-shadow: 0 0 4px oklch(0.78 0.18 50 / 0.30) !important; }
-.ab-ch--status-WAITING    { color: oklch(0.85 0.20 90)  !important; text-shadow: 0 0 4px oklch(0.85 0.20 90 / 0.30) !important; }
-/* No glow */
-.ab-ch--status-SAVED      { color: oklch(0.75 0.02 270) !important; text-shadow: none !important; }
+.ab-ch--status-FOLLOWUP   { color: oklch(0.78 0.20 50)  !important; text-shadow: 0 0 4px oklch(0.78 0.20 50 / 0.35) !important; }
+.ab-ch--status-WAITING    { color: oklch(0.85 0.22 90)  !important; text-shadow: 0 0 4px oklch(0.85 0.22 90 / 0.35) !important; }
+/* SAVED — inactive / offline: muted dark grey, no glow */
+.ab-ch--status-SAVED      { color: oklch(0.48 0.005 270) !important; text-shadow: none !important; opacity: 0.85; }
+.light .ab-ch--status-SAVED { color: oklch(0.42 0.005 270) !important; }
+
+/* Full-row text color: OFFER green, REJECTED red — overrides fav tint too */
+.ab-row.is-status-OFFER .ab-ch {
+  color: oklch(0.78 0.28 145) !important;
+  text-shadow: 0 0 6px oklch(0.78 0.28 145 / 0.55) !important;
+}
+.ab-row.is-status-REJECTED .ab-ch {
+  color: oklch(0.62 0.27 27) !important;
+  text-shadow: 0 0 6px oklch(0.62 0.27 27 / 0.55) !important;
+}
 
 
 

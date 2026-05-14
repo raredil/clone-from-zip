@@ -121,6 +121,7 @@ interface RowProps {
 function AirportBoardRowImpl({ app }: RowProps) {
   const selected = useStore((s) => s.selectedId === app.id);
   const fav = !!app.pinned;
+  const statusKey = app.status.replace(/[^A-Z]/g, "");
   return (
     <div
       role="button"
@@ -136,6 +137,7 @@ function AirportBoardRowImpl({ app }: RowProps) {
         "ab-row group/abrow",
         fav && "is-fav",
         selected && "is-selected",
+        `is-status-${statusKey}`,
       )}
     >
       <AirportField
@@ -144,12 +146,14 @@ function AirportBoardRowImpl({ app }: RowProps) {
         fieldClass="ab-field--flight"
         charClass={fav ? "ab-ch--fav" : undefined}
       />
+      <EmptyPanels count={DEST_PAD_SLOTS} />
       <AirportField
         text={countryCode(app.country)}
         spec={FIELD_SPECS.destination}
         fieldClass="ab-field--destination"
         charClass={fav ? "ab-ch--fav" : undefined}
       />
+      <EmptyPanels count={DEST_PAD_SLOTS} />
       <AirportField
         text={app.role}
         spec={FIELD_SPECS.position}

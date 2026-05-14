@@ -79,14 +79,14 @@
   --amber: oklch(0.78 0.16 80);
   --amber-soft: oklch(0.55 0.13 78);
 
-  --status-applied: oklch(0.72 0.13 235);
-  --status-interview: oklch(0.72 0.14 295);
-  --status-followup: oklch(0.74 0.14 50);
-  --status-saved: oklch(0.65 0.012 90);
-  --status-offer: oklch(0.74 0.16 145);
-  --status-rejected: oklch(0.62 0.18 25);
-  --status-waiting: oklch(0.74 0.13 65);
-  --status-assessment: oklch(0.78 0.15 90);
+  --status-applied: oklch(0.92 0.02 90);
+  --status-interview: oklch(0.74 0.14 235);
+  --status-followup: oklch(0.86 0.18 95);
+  --status-saved: oklch(0.48 0.005 270);
+  --status-offer: oklch(0.82 0.30 145);
+  --status-rejected: oklch(0.66 0.30 27);
+  --status-waiting: oklch(0.82 0.10 90);
+  --status-assessment: oklch(0.66 0.16 260);
 
   --tile-top: oklch(0.205 0.006 270);
   --tile-mid-top: oklch(0.175 0.005 270);
@@ -133,14 +133,14 @@
   --amber: oklch(0.78 0.16 80);
   --amber-soft: oklch(0.62 0.13 75);
 
-  --status-applied: oklch(0.45 0.16 245);
-  --status-interview: oklch(0.46 0.17 295);
-  --status-followup: oklch(0.50 0.16 55);
-  --status-saved: oklch(0.40 0.012 90);
-  --status-offer: oklch(0.46 0.16 150);
-  --status-rejected: oklch(0.50 0.20 25);
-  --status-waiting: oklch(0.50 0.15 70);
-  --status-assessment: oklch(0.50 0.16 90);
+  --status-applied: oklch(0.30 0.012 90);
+  --status-interview: oklch(0.42 0.18 245);
+  --status-followup: oklch(0.55 0.18 90);
+  --status-saved: oklch(0.42 0.005 270);
+  --status-offer: oklch(0.46 0.20 150);
+  --status-rejected: oklch(0.50 0.22 27);
+  --status-waiting: oklch(0.50 0.10 90);
+  --status-assessment: oklch(0.42 0.18 265);
 
   --tile-top: oklch(0.965 0.004 90);
   --tile-mid-top: oklch(0.935 0.004 90);
@@ -568,9 +568,15 @@ html.font-board .flap-text {
   background: oklch(0.88 0.005 90);
 }
 
-/* Applications page — tighter character rhythm so words read connected */
-.ab-screen--apps { --ab-gap: 1px; }
-.ab-screen--apps .ab-ch { letter-spacing: -0.06em; }
+/* Applications page — tighter character rhythm so words read connected,
+   slightly larger glyphs, less inner padding so letters fill panels better. */
+.ab-screen--apps { --ab-gap: 1px; padding: 4px 2px; }
+.ab-screen--apps .ab-field { height: 28px; }
+.ab-screen--apps .ab-ch { font-size: 17px; letter-spacing: -0.08em; font-weight: 800; }
+@media (max-width: 720px) {
+  .ab-screen--apps .ab-field { height: 24px; }
+  .ab-screen--apps .ab-ch { font-size: 13px; letter-spacing: -0.05em; }
+}
 
 .ab-header-row {
   display: grid;
@@ -745,6 +751,19 @@ html.font-board .flap-text {
 }
 .ab-row.is-status-REJECTED .ab-ch--status-REJECTED {
   text-shadow: 0 0 10px oklch(0.66 0.30 27 / 1), 0 0 22px oklch(0.66 0.30 27 / 0.65), 0 0 36px oklch(0.66 0.30 27 / 0.35) !important;
+}
+/* SAVED — full row inactive: muted dark grey, no glow, slightly faded.
+   Overrides favorite/orange tint so SAVED reads as inactive everywhere. */
+.ab-row.is-status-SAVED .ab-ch,
+.ab-row.is-status-SAVED .ab-ch--fav {
+  color: oklch(0.52 0.005 270) !important;
+  text-shadow: none !important;
+  opacity: 0.85;
+}
+.light .ab-row.is-status-SAVED .ab-ch,
+.light .ab-row.is-status-SAVED .ab-ch--fav {
+  color: oklch(0.42 0.005 270) !important;
+  opacity: 0.9;
 }
 
 

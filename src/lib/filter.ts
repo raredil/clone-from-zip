@@ -28,12 +28,32 @@ const STATUS_ORDER: Record<string, number> = {
   WAITING: 5, SAVED: 6, REJECTED: 7,
 };
 
+/**
+ * Status-based priority bucket. Lower = higher in list.
+ *  0 = OFFER (always at very top)
+ *  1 = pinned/favorite active rows
+ *  2 = other active rows (not SAVED, not REJECTED)
+ *  3 = SAVED
+ *  4 = REJECTED (always at very bottom)
+ */
+function priorityBucket(a: Application): number {
+  if (a.status === "OFFER") return 0;
+  if (a.status === "REJECTED") return 4;
+  if (a.status === "SAVED") return 3;
+  if (a.pinned) return 1;
+  return 2;
+}
+
 export function applySort(apps: Application[], key: SortKey, dir: "asc" | "desc"): Application[] {
   const arr = [...apps];
   const sign = dir === "asc" ? 1 : -1;
   const cmpStr = (a: string, b: string) => a.localeCompare(b);
   arr.sort((a, b) => {
-    // pinned always floats to top regardless of sort
+    // Status priority always wins (OFFER top, REJECTED bottom, SAVED near bottom).
+    const pa = priorityBucket(a);
+    const pb = priorityBucket(b);
+    if (pa !== pb) return pa - pb;
+    // Within the same bucket, pinned floats above non-pinned.
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     switch (key) {
       case "status":

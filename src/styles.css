@@ -286,10 +286,10 @@
   outline-offset: -1px;
 }
 
-.flap-anim { animation: flap-flip 280ms ease-out; }
+.flap-anim { animation: flap-flip 220ms ease-out; }
 @keyframes flap-flip {
-  0% { transform: rotateX(-80deg); opacity: 0.4; }
-  100% { transform: rotateX(0deg); opacity: 1; }
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 
 .bezel-screw { display: none !important; }

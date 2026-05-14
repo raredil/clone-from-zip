@@ -706,28 +706,45 @@ html.font-board .flap-text {
   .ab-row:hover .ab-field--marquee .ab-text { animation: none; }
 }
 
-/* Status — same panel system, colored TEXT (not background) */
+/* Status — same panel system, colored TEXT (not background).
+   Only OFFER and REJECTED use vivid high-intensity colors with strong glow.
+   Other statuses are controlled and readable. */
 .ab-ch--status { font-weight: 700; }
-.ab-ch--status-APPLIED    { color: oklch(0.72 0.24 250) !important; text-shadow: 0 0 8px oklch(0.72 0.24 250 / 0.85), 0 0 16px oklch(0.72 0.24 250 / 0.45) !important; }
-.ab-ch--status-OFFER      { color: oklch(0.78 0.28 145) !important; text-shadow: 0 0 8px oklch(0.78 0.28 145 / 0.9),  0 0 16px oklch(0.78 0.28 145 / 0.5)  !important; }
-.ab-ch--status-INTERVIEW  { color: oklch(0.72 0.28 295) !important; text-shadow: 0 0 8px oklch(0.72 0.28 295 / 0.85), 0 0 16px oklch(0.72 0.28 295 / 0.45) !important; }
-.ab-ch--status-REJECTED   { color: oklch(0.62 0.27 27)  !important; text-shadow: 0 0 8px oklch(0.62 0.27 27 / 0.9),   0 0 16px oklch(0.62 0.27 27 / 0.5)   !important; }
-.ab-ch--status-ASSESSMENT { color: oklch(0.85 0.22 95)  !important; text-shadow: 0 0 8px oklch(0.85 0.22 95 / 0.85),  0 0 16px oklch(0.85 0.22 95 / 0.45)  !important; }
-/* Dim glow only */
-.ab-ch--status-FOLLOWUP   { color: oklch(0.78 0.20 50)  !important; text-shadow: 0 0 4px oklch(0.78 0.20 50 / 0.35) !important; }
-.ab-ch--status-WAITING    { color: oklch(0.85 0.22 90)  !important; text-shadow: 0 0 4px oklch(0.85 0.22 90 / 0.35) !important; }
+/* APPLIED — near-white, normal board text */
+.ab-ch--status-APPLIED    { color: oklch(0.96 0.02 90) !important; text-shadow: 0 0 4px oklch(0.92 0.04 85 / 0.30) !important; }
+/* INTERVIEW — blue (slightly cooler/lighter than ASSESSMENT) */
+.ab-ch--status-INTERVIEW  { color: oklch(0.74 0.14 235) !important; text-shadow: 0 0 4px oklch(0.74 0.14 235 / 0.35) !important; }
+/* ASSESSMENT — blue (slightly deeper/different shade than INTERVIEW) */
+.ab-ch--status-ASSESSMENT { color: oklch(0.66 0.16 260) !important; text-shadow: 0 0 4px oklch(0.66 0.16 260 / 0.35) !important; }
+/* FOLLOW-UP — yellow */
+.ab-ch--status-FOLLOWUP   { color: oklch(0.86 0.18 95)  !important; text-shadow: 0 0 4px oklch(0.86 0.18 95 / 0.35) !important; }
+/* WAITING — dots, subtle glow */
+.ab-ch--status-WAITING    { color: oklch(0.78 0.04 90)  !important; text-shadow: 0 0 4px oklch(0.78 0.04 90 / 0.35) !important; }
+.ab-ch--waiting-dot       { text-shadow: 0 0 6px oklch(0.88 0.06 90 / 0.55), 0 0 12px oklch(0.88 0.06 90 / 0.30) !important; }
 /* SAVED — inactive / offline: muted dark grey, no glow */
 .ab-ch--status-SAVED      { color: oklch(0.48 0.005 270) !important; text-shadow: none !important; opacity: 0.85; }
 .light .ab-ch--status-SAVED { color: oklch(0.42 0.005 270) !important; }
+/* OFFER — vivid green, stronger glow */
+.ab-ch--status-OFFER      { color: oklch(0.82 0.30 145) !important; text-shadow: 0 0 10px oklch(0.82 0.30 145 / 1), 0 0 22px oklch(0.82 0.30 145 / 0.65), 0 0 36px oklch(0.82 0.30 145 / 0.35) !important; }
+/* REJECTED — vivid red, stronger glow */
+.ab-ch--status-REJECTED   { color: oklch(0.66 0.30 27)  !important; text-shadow: 0 0 10px oklch(0.66 0.30 27 / 1), 0 0 22px oklch(0.66 0.30 27 / 0.65), 0 0 36px oklch(0.66 0.30 27 / 0.35) !important; }
 
-/* Full-row text color: OFFER green, REJECTED red — overrides fav tint too */
+/* Full-row text color: OFFER green, REJECTED red — overrides fav tint too.
+   Status cells already have stronger glow above; row text gets a controlled glow. */
 .ab-row.is-status-OFFER .ab-ch {
-  color: oklch(0.78 0.28 145) !important;
-  text-shadow: 0 0 6px oklch(0.78 0.28 145 / 0.55) !important;
+  color: oklch(0.82 0.30 145) !important;
+  text-shadow: 0 0 6px oklch(0.82 0.30 145 / 0.7), 0 0 14px oklch(0.82 0.30 145 / 0.4) !important;
 }
 .ab-row.is-status-REJECTED .ab-ch {
-  color: oklch(0.62 0.27 27) !important;
-  text-shadow: 0 0 6px oklch(0.62 0.27 27 / 0.55) !important;
+  color: oklch(0.66 0.30 27) !important;
+  text-shadow: 0 0 6px oklch(0.66 0.30 27 / 0.7), 0 0 14px oklch(0.66 0.30 27 / 0.4) !important;
+}
+/* Status cells inside OFFER/REJECTED rows keep their stronger status glow */
+.ab-row.is-status-OFFER .ab-ch--status-OFFER {
+  text-shadow: 0 0 10px oklch(0.82 0.30 145 / 1), 0 0 22px oklch(0.82 0.30 145 / 0.65), 0 0 36px oklch(0.82 0.30 145 / 0.35) !important;
+}
+.ab-row.is-status-REJECTED .ab-ch--status-REJECTED {
+  text-shadow: 0 0 10px oklch(0.66 0.30 27 / 1), 0 0 22px oklch(0.66 0.30 27 / 0.65), 0 0 36px oklch(0.66 0.30 27 / 0.35) !important;
 }
 
 

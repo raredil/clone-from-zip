@@ -31,7 +31,7 @@ export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
 /** Empty modular panels flanking the STATUS field (left + right). */
 const STATUS_PAD_SLOTS = 2;
 /** Empty modular panels flanking the DESTINATION field (left + right). */
-const DEST_PAD_SLOTS = 3;
+const DEST_PAD_SLOTS = 1;
 
 export const TOTAL_COLS =
   FIELD_SPECS.flight.slots +
@@ -185,12 +185,14 @@ function EmptyPanels({ count }: { count: number }) {
 }
 
 function StatusField({ value }: { value: Status }) {
+  const isWaiting = value === "WAITING";
+  const displayText = isWaiting ? "..." : value;
   return (
     <AirportField
-      text={value}
+      text={displayText}
       spec={FIELD_SPECS.status}
       fieldClass="ab-field--status"
-      charClass={`ab-ch--status ab-ch--status-${value.replace(/[^A-Z]/g, "")}`}
+      charClass={`ab-ch--status ab-ch--status-${value.replace(/[^A-Z]/g, "")}${isWaiting ? " ab-ch--waiting-dot" : ""}`}
     />
   );
 }

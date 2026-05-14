@@ -307,6 +307,7 @@ export function stopSession() {
 }
 
 export function dismissSessionSummary() {
+  stopAlert();
   state.sessionSummary = null;
   emit();
 }

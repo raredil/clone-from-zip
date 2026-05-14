@@ -36,7 +36,8 @@ export function Exports() {
     exportXLSX(set, `career-board-${scope.toLowerCase()}-${stamp()}.xlsx`);
   }
   function downloadJSON() {
-    downloadFile(`career-board-backup-${stamp()}.json`, exportJSON(apps), "application/json");
+    const json = exportJSON(apps, { activity, presets, settings, timer });
+    downloadFile(`career-board-backup-${stamp()}.json`, json, "application/json");
   }
 
   const counts = useMemo(() => ({

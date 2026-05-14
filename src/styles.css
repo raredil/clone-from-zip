@@ -568,9 +568,15 @@ html.font-board .flap-text {
   background: oklch(0.88 0.005 90);
 }
 
-/* Applications page — tighter character rhythm so words read connected */
-.ab-screen--apps { --ab-gap: 1px; }
-.ab-screen--apps .ab-ch { letter-spacing: -0.06em; }
+/* Applications page — tighter character rhythm so words read connected,
+   slightly larger glyphs, less inner padding so letters fill panels better. */
+.ab-screen--apps { --ab-gap: 1px; padding: 4px 2px; }
+.ab-screen--apps .ab-field { height: 28px; }
+.ab-screen--apps .ab-ch { font-size: 17px; letter-spacing: -0.08em; font-weight: 800; }
+@media (max-width: 720px) {
+  .ab-screen--apps .ab-field { height: 24px; }
+  .ab-screen--apps .ab-ch { font-size: 13px; letter-spacing: -0.05em; }
+}
 
 .ab-header-row {
   display: grid;

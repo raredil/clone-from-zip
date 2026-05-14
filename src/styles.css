@@ -557,7 +557,7 @@ html.font-board .flap-text {
  * ============================================================ */
 .ab-screen {
   --ab-gap: 2px;
-  --ab-cols: 46; /* 12 + 3 + 20 + 11 */
+  --ab-cols: 50; /* 12 + 3 + 20 + 2(empty) + 11 + 2(empty) */
   background: #000;
   border: 0;
   border-radius: 0;
@@ -579,14 +579,17 @@ html.font-board .flap-text {
   text-align: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 0.28em;
+  font-size: 16px;
+  letter-spacing: 0.32em;
   color: oklch(0.88 0.20 92); /* yellow */
-  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6);
+  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6), 0 0 10px oklch(0.85 0.20 92 / 0.35);
 }
 .light .ab-header-row > div {
   color: oklch(0.55 0.18 80);
   text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
+}
+@media (max-width: 720px) {
+  .ab-header-row > div { font-size: 13px; letter-spacing: 0.24em; }
 }
 
 .ab-rows {
@@ -659,7 +662,10 @@ html.font-board .flap-text {
   line-height: 1;
   letter-spacing: -0.04em;
   color: oklch(0.94 0.04 85);
-  text-shadow: 0 0 5px oklch(0.78 0.16 80 / 0.25);
+  /* subtle illuminated airport-display glow on regular content */
+  text-shadow:
+    0 0 4px oklch(0.88 0.16 85 / 0.45),
+    0 0 10px oklch(0.82 0.16 80 / 0.22);
   overflow: hidden;
 }
 .light .ab-ch {
@@ -698,14 +704,16 @@ html.font-board .flap-text {
 
 /* Status — same panel system, colored TEXT (not background) */
 .ab-ch--status { font-weight: 700; }
-.ab-ch--status-APPLIED    { color: oklch(0.74 0.18 250) !important; text-shadow: 0 0 6px oklch(0.74 0.18 250 / 0.45) !important; }
-.ab-ch--status-OFFER      { color: oklch(0.80 0.22 145) !important; text-shadow: 0 0 6px oklch(0.80 0.22 145 / 0.5) !important; }
-.ab-ch--status-INTERVIEW  { color: oklch(0.74 0.22 295) !important; text-shadow: 0 0 6px oklch(0.74 0.22 295 / 0.45) !important; }
-.ab-ch--status-FOLLOWUP   { color: oklch(0.78 0.18 50)  !important; text-shadow: 0 0 6px oklch(0.78 0.18 50 / 0.45)  !important; }
-.ab-ch--status-WAITING    { color: oklch(0.85 0.20 90)  !important; text-shadow: 0 0 6px oklch(0.85 0.20 90 / 0.45)  !important; }
-.ab-ch--status-REJECTED   { color: oklch(0.72 0.22 25)  !important; text-shadow: 0 0 6px oklch(0.72 0.22 25 / 0.45)  !important; }
+.ab-ch--status-APPLIED    { color: oklch(0.74 0.18 250) !important; text-shadow: 0 0 8px oklch(0.74 0.20 250 / 0.75), 0 0 16px oklch(0.74 0.20 250 / 0.35) !important; }
+.ab-ch--status-OFFER      { color: oklch(0.80 0.22 145) !important; text-shadow: 0 0 8px oklch(0.80 0.22 145 / 0.8), 0 0 16px oklch(0.80 0.22 145 / 0.4) !important; }
+.ab-ch--status-INTERVIEW  { color: oklch(0.74 0.22 295) !important; text-shadow: 0 0 8px oklch(0.74 0.22 295 / 0.75), 0 0 16px oklch(0.74 0.22 295 / 0.35) !important; }
+.ab-ch--status-REJECTED   { color: oklch(0.72 0.22 25)  !important; text-shadow: 0 0 8px oklch(0.72 0.22 25 / 0.75), 0 0 16px oklch(0.72 0.22 25 / 0.35)  !important; }
+.ab-ch--status-ASSESSMENT { color: oklch(0.85 0.20 95)  !important; text-shadow: 0 0 8px oklch(0.85 0.20 95 / 0.75), 0 0 16px oklch(0.85 0.20 95 / 0.35)  !important; }
+/* Dim glow only */
+.ab-ch--status-FOLLOWUP   { color: oklch(0.78 0.18 50)  !important; text-shadow: 0 0 4px oklch(0.78 0.18 50 / 0.30) !important; }
+.ab-ch--status-WAITING    { color: oklch(0.85 0.20 90)  !important; text-shadow: 0 0 4px oklch(0.85 0.20 90 / 0.30) !important; }
+/* No glow */
 .ab-ch--status-SAVED      { color: oklch(0.75 0.02 270) !important; text-shadow: none !important; }
-.ab-ch--status-ASSESSMENT { color: oklch(0.85 0.20 95)  !important; text-shadow: 0 0 6px oklch(0.85 0.20 95 / 0.45)  !important; }
 
 
 
@@ -719,3 +727,39 @@ html.font-board .flap-text {
 .light .dashboard-screen {
   background: oklch(0.92 0.005 90);
 }
+
+/* Applications page — meta strip beneath each airport row */
+.ab-app-row-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ab-app-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 2px 6px 4px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: oklch(0.78 0.05 85 / 0.78);
+  text-shadow: 0 0 4px oklch(0.82 0.16 80 / 0.25);
+}
+.ab-app-meta em {
+  font-style: normal;
+  color: oklch(0.86 0.18 90);
+  margin-right: 4px;
+  text-shadow: 0 0 6px oklch(0.86 0.18 90 / 0.4);
+}
+.ab-app-meta__fav {
+  color: oklch(0.85 0.18 70);
+  text-shadow: 0 0 6px oklch(0.85 0.18 70 / 0.5);
+  min-width: 0;
+}
+.light .ab-app-meta {
+  color: oklch(0.32 0.02 265);
+  text-shadow: none;
+}
+.light .ab-app-meta em { color: oklch(0.45 0.16 75); text-shadow: none; }
+.light .ab-app-meta__fav { color: oklch(0.50 0.18 70); text-shadow: none; }

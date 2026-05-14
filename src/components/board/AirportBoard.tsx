@@ -28,11 +28,16 @@ export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
   status: { slots: 11, align: "center" }, // fits "ASSESSMENT" (10) and "INTERVIEW" (9)
 };
 
+/** Empty modular panels flanking the STATUS field (left + right). */
+const STATUS_PAD_SLOTS = 2;
+
 export const TOTAL_COLS =
   FIELD_SPECS.flight.slots +
   FIELD_SPECS.destination.slots +
   FIELD_SPECS.position.slots +
-  FIELD_SPECS.status.slots;
+  STATUS_PAD_SLOTS +
+  FIELD_SPECS.status.slots +
+  STATUS_PAD_SLOTS;
 
 export function AirportHeaderRow() {
   return (
@@ -40,7 +45,9 @@ export function AirportHeaderRow() {
       <div style={{ gridColumn: `span ${FIELD_SPECS.flight.slots}` }}>FLIGHT</div>
       <div style={{ gridColumn: `span ${FIELD_SPECS.destination.slots}` }}>DEST</div>
       <div style={{ gridColumn: `span ${FIELD_SPECS.position.slots}` }}>POSITION</div>
+      <div style={{ gridColumn: `span ${STATUS_PAD_SLOTS}` }} aria-hidden="true" />
       <div style={{ gridColumn: `span ${FIELD_SPECS.status.slots}` }}>STATUS</div>
+      <div style={{ gridColumn: `span ${STATUS_PAD_SLOTS}` }} aria-hidden="true" />
     </div>
   );
 }
@@ -143,7 +150,26 @@ function AirportBoardRowImpl({ app }: RowProps) {
         fieldClass="ab-field--position"
         charClass={fav ? "ab-ch--fav" : undefined}
       />
+      <EmptyPanels count={STATUS_PAD_SLOTS} />
       <StatusField value={app.status} />
+      <EmptyPanels count={STATUS_PAD_SLOTS} />
+    </div>
+  );
+}
+
+function EmptyPanels({ count }: { count: number }) {
+  const style = {
+    ["--slots" as string]: String(count),
+    ["--chars" as string]: String(count),
+    gridColumn: `span ${count}`,
+  } as React.CSSProperties;
+  return (
+    <div className="ab-field ab-field--empty" style={style} aria-hidden="true">
+      <div className="ab-cells">
+        {Array.from({ length: count }).map((_, i) => (
+          <span key={i} className="ab-cell" />
+        ))}
+      </div>
     </div>
   );
 }

@@ -33,8 +33,31 @@ export function downloadFile(filename: string, content: string, mime = "text/csv
   setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
 }
 
-export function exportJSON(apps: Application[]): string {
-  return JSON.stringify({ exportedAt: new Date().toISOString(), count: apps.length, apps }, null, 2);
+export interface FullBackup {
+  version: number;
+  app: string;
+  exportedAt: string;
+  count: number;
+  apps: Application[];
+  activity?: unknown[];
+  presets?: unknown[];
+  settings?: unknown;
+  timer?: unknown;
+}
+
+export function exportJSON(
+  apps: Application[],
+  extras?: { activity?: unknown[]; presets?: unknown[]; settings?: unknown; timer?: unknown },
+): string {
+  const payload: FullBackup = {
+    version: 2,
+    app: "career-board",
+    exportedAt: new Date().toISOString(),
+    count: apps.length,
+    apps,
+    ...(extras || {}),
+  };
+  return JSON.stringify(payload, null, 2);
 }
 
 export function exportPrintableHTML(apps: Application[], title: string): string {

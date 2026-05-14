@@ -93,16 +93,36 @@ export function ApplicationsList({ scope = "ACTIVE" }: { scope?: "ACTIVE" | "ALL
           ))}
         </div>
       ) : (
-        <AirportScreen>
-          <AirportHeaderRow />
-          <div className="ab-rows">
-            {list.map((a) => (
-              <AirportBoardRow key={a.id} app={a} />
-            ))}
-          </div>
-        </AirportScreen>
+        <ApplicationsBoard rows={list} />
       )}
     </div>
+  );
+}
+
+function ApplicationsBoard({ rows }: { rows: ReturnType<typeof applyFilters> }) {
+  // Mirror the Dashboard's two-column board layout so panels stay rectangular
+  // (wider than tall) at large widths and don't render as squashed squares.
+  const mid = Math.ceil(rows.length / 2);
+  const left = rows.slice(0, mid);
+  const right = rows.slice(mid);
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <Column rows={left} />
+      {right.length > 0 && <Column rows={right} />}
+    </div>
+  );
+}
+
+function Column({ rows }: { rows: ReturnType<typeof applyFilters> }) {
+  return (
+    <AirportScreen>
+      <AirportHeaderRow />
+      <div className="ab-rows">
+        {rows.map((a) => (
+          <AirportBoardRow key={a.id} app={a} />
+        ))}
+      </div>
+    </AirportScreen>
   );
 }
 

@@ -54,6 +54,7 @@ function Index() {
             </div>
           ) : (
             <>
+            <ViewBoundary viewKey={view}>
               {view === "DASHBOARD" && (
                 <div className="dashboard-screen p-2 lg:p-3">
                   <Board />
@@ -70,6 +71,7 @@ function Index() {
               {view === "DOCUMENTS" && <ViewWrap title="DOCUMENTS"><ApplicationsList scope="DOCS" /></ViewWrap>}
               {view === "ARCHIVE" && <ViewWrap title="ARCHIVE"><ApplicationsList scope="ARCHIVE" /></ViewWrap>}
               {view === "SETTINGS" && <ViewWrap title="SETTINGS"><Suspense fallback={<PanelFallback />}><SettingsView /></Suspense></ViewWrap>}
+            </ViewBoundary>
             </>
           )}
         </main>

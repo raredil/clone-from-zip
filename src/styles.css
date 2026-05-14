@@ -579,14 +579,17 @@ html.font-board .flap-text {
   text-align: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 11px;
-  letter-spacing: 0.28em;
+  font-size: 16px;
+  letter-spacing: 0.32em;
   color: oklch(0.88 0.20 92); /* yellow */
-  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6);
+  text-shadow: 0 1px 0 oklch(0 0 0 / 0.6), 0 0 10px oklch(0.85 0.20 92 / 0.35);
 }
 .light .ab-header-row > div {
   color: oklch(0.55 0.18 80);
   text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
+}
+@media (max-width: 720px) {
+  .ab-header-row > div { font-size: 13px; letter-spacing: 0.24em; }
 }
 
 .ab-rows {

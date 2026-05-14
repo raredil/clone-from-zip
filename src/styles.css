@@ -613,10 +613,10 @@ html.font-board .flap-text {
   outline-offset: -1px;
 }
 
-/* Field container — tight, rectangular */
+/* Field container — tight, rectangular (wider than tall) */
 .ab-field {
   position: relative;
-  height: 22px;
+  height: 26px;
   overflow: hidden;
   border-radius: 0;
 }
@@ -629,7 +629,7 @@ html.font-board .flap-text {
   pointer-events: none;
 }
 .ab-cell {
-  background: oklch(0.18 0.004 270); /* slightly lighter than pure black */
+  background: oklch(0.18 0.004 270);
   border-radius: 1px;
   box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.55);
 }
@@ -654,16 +654,27 @@ html.font-board .flap-text {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 15px;
   line-height: 1;
-  letter-spacing: 0;
+  letter-spacing: -0.04em;
   color: oklch(0.94 0.04 85);
   text-shadow: 0 0 5px oklch(0.78 0.16 80 / 0.25);
+  overflow: hidden;
 }
 .light .ab-ch {
   color: oklch(0.94 0.04 85);
   text-shadow: 0 0 6px oklch(0 0 0 / 0.5);
+}
+
+/* On narrow screens shrink slightly so chars never overflow the cell. */
+@media (max-width: 720px) {
+  .ab-field { height: 22px; }
+  .ab-ch { font-size: 12px; letter-spacing: -0.03em; }
+}
+@media (max-width: 420px) {
+  .ab-field { height: 20px; }
+  .ab-ch { font-size: 10.5px; }
 }
 
 /* Favorite — text only goes orange. Status keeps its own colors. */

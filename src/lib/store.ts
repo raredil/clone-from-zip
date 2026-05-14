@@ -3,7 +3,7 @@ import type { Application, ActivityEntry, FilterPreset, FilterState, TimerState,
 import { emptyFilters, defaultTimer, defaultSession } from "./types";
 import * as db from "./db";
 import { buildSeed } from "./seed";
-import { startAlertSound, stopAlertSound, playCue, unlockAudio, bindAutoUnlock } from "./audio";
+import { startAlertSound, stopAlertSound, unlockAudio, bindAutoUnlock } from "./audio";
 
 interface State {
   ready: boolean;
@@ -307,6 +307,7 @@ export function stopSession() {
 }
 
 export function dismissSessionSummary() {
+  stopAlert();
   state.sessionSummary = null;
   emit();
 }
@@ -382,7 +383,7 @@ function finishCycle() {
     // Brief notification + auto-restart next cycle
     notify(success ? "Cycle complete — next starting" : "Cycle missed — next starting",
       success ? `${t.mode} goal met. New cycle begins.` : `No ${t.mode === "SEARCH" ? "jobs" : "applications"} this cycle. Pressure on.`);
-    if (state.timer.soundOn) playCue(success);
+    if (state.timer.soundOn) startAlertSound(success, { intervalMs: 3000, maxMs: state.timer.durationSec * 1000 });
     // Auto-start next cycle
     const next = new Date().toISOString();
     state.timer = {
@@ -406,7 +407,7 @@ function finishCycle() {
   // Normal mode: end the session, show summary
   notify(success ? "Session complete" : "Session ended",
     success ? `Great work — ${t.mode} goal met` : `No new ${t.mode === "SEARCH" ? "jobs" : "applications"} this cycle`);
-  if (state.timer.soundOn) startAlertSound(success);
+  if (state.timer.soundOn) startAlertSound(success, { intervalMs: 3000, maxMs: null });
   state.alertActive = true;
   const ended: SessionState = {
     ...state.session,

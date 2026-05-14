@@ -557,7 +557,7 @@ html.font-board .flap-text {
  * ============================================================ */
 .ab-screen {
   --ab-gap: 2px;
-  --ab-cols: 46; /* 12 + 3 + 20 + 11 */
+  --ab-cols: 50; /* 12 + 3 + 20 + 2(empty) + 11 + 2(empty) */
   background: #000;
   border: 0;
   border-radius: 0;

@@ -382,7 +382,7 @@ function finishCycle() {
     // Brief notification + auto-restart next cycle
     notify(success ? "Cycle complete — next starting" : "Cycle missed — next starting",
       success ? `${t.mode} goal met. New cycle begins.` : `No ${t.mode === "SEARCH" ? "jobs" : "applications"} this cycle. Pressure on.`);
-    if (state.timer.soundOn) playCue(success);
+    if (state.timer.soundOn) startAlertSound(success, { intervalMs: 3000, maxMs: state.timer.durationSec * 1000 });
     // Auto-start next cycle
     const next = new Date().toISOString();
     state.timer = {

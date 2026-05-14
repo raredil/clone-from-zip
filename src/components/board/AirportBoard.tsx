@@ -29,7 +29,7 @@ export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
 };
 
 /** Empty modular panels flanking the STATUS field (left + right). */
-const STATUS_PAD_SLOTS = 2;
+const STATUS_PAD_SLOTS = 1;
 /** Empty modular panels flanking the DESTINATION field (left + right). */
 const DEST_PAD_SLOTS = 1;
 

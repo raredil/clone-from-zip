@@ -455,7 +455,7 @@ button:disabled,
   text-overflow: ellipsis;
   overflow: hidden;
   vertical-align: middle;
-  will-change: transform;
+  /* will-change is set on hover via the .row-flap:hover selector */
   transform: translateX(0);
 }
 .row-flap:hover .position-marquee-inner {

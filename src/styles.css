@@ -689,15 +689,18 @@ html.font-board .flap-text {
 }
 
 /* Smooth, GPU-friendly slide — chars glide under the fixed cell layer.
-   Triggers only on hover/focus of the row, only on overflowing fields. */
+   Triggers only on hover/focus of the row, only on overflowing fields.
+   Vintage split-flap feel: linear, frame-per-frame consistent speed
+   (~160ms per character, regardless of text length). Adds +1 char of
+   over-travel so the final letter fully clears the right edge. */
 .ab-row:hover .ab-field--marquee .ab-text,
 .ab-row:focus-within .ab-field--marquee .ab-text {
   will-change: transform;
-  animation: ab-slot-scroll 8s cubic-bezier(0.45, 0, 0.55, 1) 250ms 1 forwards;
+  animation: ab-slot-scroll calc((var(--chars) - var(--slots) + 2) * 160ms) linear 350ms 1 forwards;
 }
 @keyframes ab-slot-scroll {
-  0%, 8%   { transform: translateX(0); }
-  92%, 100% { transform: translateX(calc((var(--slots) - var(--chars)) * (100% / var(--chars)))); }
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(calc((var(--slots) - var(--chars) - 1) * (100% / var(--chars)))); }
 }
 @media (prefers-reduced-motion: reduce) {
   .ab-row:hover .ab-field--marquee .ab-text,

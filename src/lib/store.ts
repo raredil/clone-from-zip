@@ -3,7 +3,7 @@ import type { Application, ActivityEntry, FilterPreset, FilterState, TimerState,
 import { emptyFilters, defaultTimer, defaultSession } from "./types";
 import * as db from "./db";
 import { buildSeed } from "./seed";
-import { startAlertSound, stopAlertSound, unlockAudio, bindAutoUnlock } from "./audio";
+import { startAlertSound, stopAlertSound, unlockAudio, bindAutoUnlock, playCue } from "./audio";
 
 interface State {
   ready: boolean;
@@ -383,7 +383,10 @@ function finishCycle() {
     // Brief notification + auto-restart next cycle
     notify(success ? "Cycle complete — next starting" : "Cycle missed — next starting",
       success ? `${t.mode} goal met. New cycle begins.` : `No ${t.mode === "SEARCH" ? "jobs" : "applications"} this cycle. Pressure on.`);
-    if (state.timer.soundOn) startAlertSound(success, { intervalMs: 3000, maxMs: state.timer.durationSec * 1000 });
+    // Continuous mode: play reminder ONCE per cycle (not a repeating alert).
+    // Ensures sound fires every cycle without overlapping previous loops.
+    stopAlertSound();
+    if (state.timer.soundOn) playCue(success);
     // Auto-start next cycle
     const next = new Date().toISOString();
     state.timer = {

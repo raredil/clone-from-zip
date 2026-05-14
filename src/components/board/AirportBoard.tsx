@@ -22,7 +22,7 @@ export interface FieldSpec {
 }
 
 export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
-  flight: { slots: 12, align: "left" },
+  flight: { slots: 12, align: "left", marquee: true },
   destination: { slots: 3, align: "center" },
   position: { slots: 20, align: "left", marquee: true },
   status: { slots: 11, align: "center" }, // fits "ASSESSMENT" (10) and "INTERVIEW" (9)

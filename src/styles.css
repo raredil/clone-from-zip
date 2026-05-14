@@ -662,7 +662,10 @@ html.font-board .flap-text {
   line-height: 1;
   letter-spacing: -0.04em;
   color: oklch(0.94 0.04 85);
-  text-shadow: 0 0 5px oklch(0.78 0.16 80 / 0.25);
+  /* subtle illuminated airport-display glow on regular content */
+  text-shadow:
+    0 0 4px oklch(0.88 0.16 85 / 0.45),
+    0 0 10px oklch(0.82 0.16 80 / 0.22);
   overflow: hidden;
 }
 .light .ab-ch {

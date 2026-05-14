@@ -468,19 +468,92 @@ function sanitizeApp(a: Application): Application | null {
   };
 }
 
+function dedupeKey(a: Application): string {
+  // Stable identity: prefer id, then external link, then triple of normalized fields.
+  const norm = (s?: string) => (s || "").trim().toLowerCase();
+  if (a.link) return `link:${norm(a.link)}`;
+  return `crc:${norm(a.company)}|${norm(a.role)}|${norm(a.country)}`;
+}
+
 export async function bulkImport(apps: Application[]) {
-  // MERGE — incoming wins on id collision; existing items remain
-  const map = new Map(state.apps.map((a) => [a.id, a]));
-  let n = 0;
+  // MERGE — preserve all existing records; add imported ones.
+  // Dedupe by id first, then by link / company+role+country to avoid creating duplicates.
+  const byId = new Map(state.apps.map((a) => [a.id, a]));
+  const byKey = new Map(state.apps.map((a) => [dedupeKey(a), a]));
+  let added = 0;
+  let updated = 0;
   for (const raw of apps) {
     const merged = sanitizeApp(raw);
     if (!merged) continue;
-    map.set(merged.id, merged);
-    n++;
+    if (byId.has(merged.id)) {
+      // Same id — keep newer updatedAt to avoid reverting edits.
+      const existing = byId.get(merged.id)!;
+      const winner = (merged.updatedAt || "") > (existing.updatedAt || "") ? merged : existing;
+      byId.set(merged.id, winner);
+      byKey.set(dedupeKey(winner), winner);
+      updated++;
+      continue;
+    }
+    const k = dedupeKey(merged);
+    const dupe = byKey.get(k);
+    if (dupe) {
+      // Same logical record — keep existing id, take newer fields.
+      const winner: Application = (merged.updatedAt || "") > (dupe.updatedAt || "")
+        ? { ...merged, id: dupe.id }
+        : dupe;
+      byId.set(dupe.id, winner);
+      byKey.set(k, winner);
+      updated++;
+    } else {
+      byId.set(merged.id, merged);
+      byKey.set(k, merged);
+      added++;
+    }
   }
-  state.apps = [...map.values()];
+  state.apps = [...byId.values()];
   await db.bulkPutApps(state.apps);
-  await pushActivity("IMPORT", `Merged ${n} applications`);
+  await pushActivity("IMPORT", `Merged ${added} new, ${updated} updated`);
+  emit();
+}
+
+// Optional restore of secondary stores from a full backup payload.
+export async function bulkImportExtras(payload: {
+  activity?: ActivityEntry[];
+  presets?: FilterPreset[];
+  settings?: Settings;
+  timer?: Partial<TimerState>;
+}, mode: "REPLACE" | "MERGE" = "REPLACE") {
+  if (payload.settings) {
+    state.settings = { ...state.settings, ...payload.settings };
+    await db.setSettings(state.settings);
+  }
+  if (payload.timer) {
+    // never resume an old running timer mid-import
+    state.timer = { ...defaultTimer(), ...payload.timer, running: false };
+    await db.setTimer(state.timer);
+  }
+  if (payload.activity && Array.isArray(payload.activity)) {
+    if (mode === "REPLACE") {
+      try { const d = await db.getDB(); await d.clear("activity"); } catch {/* ignore */}
+      state.activity = [...payload.activity].sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 1000);
+    } else {
+      const seen = new Set(state.activity.map((e) => e.id));
+      const merged = [...state.activity];
+      for (const e of payload.activity) if (!seen.has(e.id)) merged.push(e);
+      state.activity = merged.sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 1000);
+    }
+    for (const e of state.activity) await db.pushActivity(e);
+  }
+  if (payload.presets && Array.isArray(payload.presets)) {
+    if (mode === "REPLACE") {
+      try { const d = await db.getDB(); await d.clear("presets"); } catch {/* ignore */}
+      state.presets = [...payload.presets];
+    } else {
+      const ids = new Set(state.presets.map((p) => p.id));
+      state.presets = [...state.presets, ...payload.presets.filter((p) => !ids.has(p.id))];
+    }
+    for (const p of state.presets) await db.putPreset(p);
+  }
   emit();
 }
 

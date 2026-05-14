@@ -8,6 +8,10 @@ import { countryFullName } from "@/lib/countries";
 export function Exports() {
   const apps = useStore((s) => s.apps);
   const filters = useStore((s) => s.filters);
+  const activity = useStore((s) => s.activity);
+  const presets = useStore((s) => s.presets);
+  const settings = useStore((s) => s.settings);
+  const timer = useStore((s) => s.timer);
   const filtered = useMemo(() => applyFilters(apps, filters), [apps, filters]);
 
   function downloadCSV(scope: "ALL" | "FILTERED" | "FAVORITES" | "INTERVIEWS" | "OFFERS" | "REJECTED") {

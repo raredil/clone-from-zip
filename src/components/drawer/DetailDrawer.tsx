@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Trash2, Pin, PinOff, ExternalLink, Plus, Upload, Download, Eye, Mail, Linkedin } from "lucide-react";
-import { useStore, selectApp, updateApp, removeApp, cryptoId } from "@/lib/store";
+import { X, Trash2, Pin, PinOff, ExternalLink, Plus, Upload, Download, Eye, Mail, Linkedin, Undo2, Redo2, Eraser } from "lucide-react";
+import { useStore, selectApp, updateApp, removeApp, cryptoId, undoStatusChange, redoStatusChange, clearStatusHistory, canUndoStatus, canRedoStatus } from "@/lib/store";
 import { ALL_STATUSES, type DocLink } from "@/lib/types";
 import { StatusLabel } from "../board/StatusLabel";
 import { CountrySelect } from "@/components/ui/CountrySelect";
 import { normalizeCountry } from "@/lib/countries";
 import { putDocBlob, getDocBlob, deleteDocBlob } from "@/lib/db";
+import { displayStatus } from "@/lib/export";
 
 export function DetailDrawer() {
   const id = useStore((s) => s.selectedId);

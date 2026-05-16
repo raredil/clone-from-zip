@@ -25,7 +25,8 @@ export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
   flight: { slots: 12, align: "left", marquee: true },
   destination: { slots: 3, align: "center" },
   position: { slots: 20, align: "left", marquee: true },
-  status: { slots: 11, align: "center" }, // fits "ASSESSMENT" (10) and "INTERVIEW" (9)
+  // bumped to 13 + marquee so "ASSESSMENT 12" / "INTERVIEW 10" fit cleanly.
+  status: { slots: 13, align: "center", marquee: true },
 };
 
 /** Empty modular panels flanking the STATUS field (left + right). */
@@ -63,20 +64,24 @@ interface FieldProps {
   spec: FieldSpec;
   fieldClass: string;
   charClass?: string;
+  /** Returns a className for character at index `i` (in the original text, not padded). */
+  charClassAt?: (i: number, ch: string) => string | undefined;
 }
 
-function AirportField({ text, spec, fieldClass, charClass }: FieldProps) {
+function AirportField({ text, spec, fieldClass, charClass, charClassAt }: FieldProps) {
   const upper = (text || "").toUpperCase();
   const chars = Array.from(upper);
   const overflow = chars.length > spec.slots;
   const total = overflow ? chars.length : spec.slots;
 
   const padded: string[] = chars.slice();
+  let leftPad = 0;
   if (!overflow) {
     if (spec.align === "center") {
       const pad = spec.slots - chars.length;
       const left = Math.floor(pad / 2);
       const right = pad - left;
+      leftPad = left;
       for (let i = 0; i < left; i++) padded.unshift(" ");
       for (let i = 0; i < right; i++) padded.push(" ");
     } else {
@@ -102,11 +107,17 @@ function AirportField({ text, spec, fieldClass, charClass }: FieldProps) {
         ))}
       </div>
       <div className="ab-text">
-        {padded.map((c, i) => (
-          <span key={i} className={cn("ab-ch", charClass)}>
-            {c === " " ? "\u00A0" : c}
-          </span>
-        ))}
+        {padded.map((c, i) => {
+          const origIdx = i - leftPad;
+          const extra = charClassAt && origIdx >= 0 && origIdx < chars.length
+            ? charClassAt(origIdx, c)
+            : undefined;
+          return (
+            <span key={i} className={cn("ab-ch", charClass, extra)}>
+              {c === " " ? "\u00A0" : c}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
@@ -122,6 +133,10 @@ function AirportBoardRowImpl({ app }: RowProps) {
   const selected = useStore((s) => s.selectedId === app.id);
   const fav = !!app.pinned;
   const statusKey = app.status.replace(/[^A-Z]/g, "");
+  // Prefix favorite rows with "★ " in the flight field. The first char is
+  // styled by the `charClassAt` callback so it stays orange (red on REJECTED)
+  // independent of the row's status color.
+  const flightText = (fav ? "★ " : "") + app.company;
   return (
     <div
       role="button"
@@ -141,9 +156,10 @@ function AirportBoardRowImpl({ app }: RowProps) {
       )}
     >
       <AirportField
-        text={(fav ? "* " : "") + app.company}
+        text={flightText}
         spec={FIELD_SPECS.flight}
         fieldClass="ab-field--flight"
+        charClassAt={fav ? (i) => (i === 0 ? "ab-ch--fav-star" : undefined) : undefined}
       />
       <EmptyPanels count={DEST_PAD_SLOTS} />
       <AirportField
@@ -158,7 +174,7 @@ function AirportBoardRowImpl({ app }: RowProps) {
         fieldClass="ab-field--position"
       />
       <EmptyPanels count={STATUS_PAD_SLOTS} />
-      <StatusField value={app.status} />
+      <StatusField value={app.status} app={app} />
       <EmptyPanels count={STATUS_PAD_SLOTS} />
     </div>
   );
@@ -181,9 +197,16 @@ function EmptyPanels({ count }: { count: number }) {
   );
 }
 
-function StatusField({ value }: { value: Status }) {
+function StatusField({ value, app }: { value: Status; app: Application }) {
   const isWaiting = value === "WAITING";
-  const displayText = isWaiting ? "..." : value;
+  let displayText: string;
+  if (isWaiting) displayText = "...";
+  else if (value === "INTERVIEW" || value === "ASSESSMENT") {
+    const n = stageNumberFor(app, value);
+    displayText = `${value} ${n}`;
+  } else {
+    displayText = value;
+  }
   return (
     <AirportField
       text={displayText}
@@ -192,6 +215,16 @@ function StatusField({ value }: { value: Status }) {
       charClass={`ab-ch--status ab-ch--status-${value.replace(/[^A-Z]/g, "")}${isWaiting ? " ab-ch--waiting-dot" : ""}`}
     />
   );
+}
+
+/** Count occurrences of a given status (INTERVIEW or ASSESSMENT) in history.
+ *  Defaults to 1 when history is missing/empty but current status matches. */
+export function stageNumberFor(app: Application, status: "INTERVIEW" | "ASSESSMENT"): number {
+  const hist = app.statusHistory || [];
+  let n = 0;
+  for (const e of hist) if (e && e.status === status) n++;
+  if (n === 0 && app.status === status) n = 1;
+  return Math.max(1, n);
 }
 
 export const AirportBoardRow = memo(AirportBoardRowImpl);

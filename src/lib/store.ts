@@ -139,6 +139,8 @@ export async function addApp(partial: Partial<Application>) {
 }
 
 const saveDebounce = new Map<string, ReturnType<typeof setTimeout>>();
+// Per-app redo stack for status undo/redo. Transient, in-memory only.
+const redoStacks = new Map<string, import("./types").StatusEvent[]>();
 export function updateApp(id: string, patch: Partial<Application>, opts: { activity?: string } = {}) {
   const idx = state.apps.findIndex((a) => a.id === id);
   if (idx === -1) return;
@@ -153,6 +155,8 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
     if (patch.status === "APPLIED" && !next.appliedAt) {
       next.appliedAt = now;
     }
+    // A fresh status change invalidates any pending redo for this app.
+    redoStacks.delete(id);
   }
   state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
   if (patch.pinned !== undefined && patch.pinned !== prev.pinned) {
@@ -186,6 +190,88 @@ export async function removeApp(id: string) {
 export function selectApp(id: string | null) {
   state.selectedId = id;
   emit();
+}
+
+// ===== Status history undo / redo / clear =====
+export function canUndoStatus(id: string): boolean {
+  const app = state.apps.find((a) => a.id === id);
+  if (!app) return false;
+  const h = app.statusHistory || [];
+  return h.length > 1;
+}
+export function canRedoStatus(id: string): boolean {
+  const stack = redoStacks.get(id);
+  return !!stack && stack.length > 0;
+}
+export function undoStatusChange(id: string) {
+  const idx = state.apps.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  const prev = state.apps[idx];
+  const hist = [...(prev.statusHistory || [])];
+  if (hist.length < 2) return; // nothing meaningful to undo
+  const popped = hist.pop()!;
+  const restoredEvt = hist[hist.length - 1];
+  const restoredStatus = restoredEvt.status;
+  const now = new Date().toISOString();
+  const next: Application = {
+    ...prev,
+    status: restoredStatus,
+    statusHistory: hist,
+    statusChangedAt: restoredEvt.ts,
+    updatedAt: now,
+  };
+  // If we just undid the only APPLIED transition, drop appliedAt so it can be re-set.
+  if (!hist.some((e) => e.status === "APPLIED")) {
+    next.appliedAt = undefined;
+  }
+  state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
+  const stack = redoStacks.get(id) || [];
+  stack.push(popped);
+  redoStacks.set(id, stack);
+  pushActivity("STATUS", `${next.company}: undo → ${restoredStatus}`, id);
+  emit();
+  db.putApp(next);
+}
+export function redoStatusChange(id: string) {
+  const stack = redoStacks.get(id);
+  if (!stack || stack.length === 0) return;
+  const idx = state.apps.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  const evt = stack.pop()!;
+  redoStacks.set(id, stack);
+  const prev = state.apps[idx];
+  const hist = [...(prev.statusHistory || []), evt];
+  const now = new Date().toISOString();
+  const next: Application = {
+    ...prev,
+    status: evt.status,
+    statusHistory: hist,
+    statusChangedAt: evt.ts,
+    updatedAt: now,
+  };
+  if (evt.status === "APPLIED" && !next.appliedAt) next.appliedAt = evt.ts;
+  state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
+  pushActivity("STATUS", `${next.company}: redo → ${evt.status}`, id);
+  emit();
+  db.putApp(next);
+}
+export function clearStatusHistory(id: string) {
+  const idx = state.apps.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  const prev = state.apps[idx];
+  const now = new Date().toISOString();
+  const synth = { id: cryptoId(), status: prev.status, ts: now };
+  const next: Application = {
+    ...prev,
+    statusHistory: [synth],
+    statusChangedAt: now,
+    updatedAt: now,
+  };
+  state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
+  redoStacks.delete(id);
+  pushActivity("STATUS", `${next.company}: history cleared`, id);
+  emit();
+  db.putApp(next);
 }
 
 // Filters
@@ -415,14 +501,19 @@ function finishCycle() {
     // Ensures sound fires every cycle without overlapping previous loops.
     stopAlertSound();
     if (state.timer.soundOn) playCue(success);
-    // Auto-start next cycle
-    const next = new Date().toISOString();
+    // Auto-start next cycle. Anchor `cycleStartedAt` at the PREVIOUS boundary
+    // (prev start + duration) rather than `now`, so that if the tab was
+    // throttled / asleep and many cycle-durations elapsed, the next tick(s)
+    // will catch up and fire each missed cycle in order — no skipped cycles.
+    const prevStartMs = t.cycleStartedAt ? new Date(t.cycleStartedAt).getTime() : Date.now();
+    const nextAnchorMs = prevStartMs + t.durationSec * 1000;
+    const nextAnchor = new Date(nextAnchorMs).toISOString();
     state.timer = {
       ...state.timer,
       running: true,
-      startedAt: next,
-      cycleStartedAt: next,
-      remainingSec: state.timer.durationSec,
+      startedAt: nextAnchor,
+      cycleStartedAt: nextAnchor,
+      remainingSec: Math.max(0, t.durationSec - Math.floor((Date.now() - nextAnchorMs) / 1000)),
       cycleStartCount: currentCycleBaseline(),
     };
     state.session = {

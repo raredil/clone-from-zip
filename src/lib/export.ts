@@ -475,41 +475,73 @@ export function exportXLSX(apps: Application[], filename: string) {
 export interface TimelineRow {
   company: string;
   role: string;
-  status: Status;
-  from?: Status;
-  timestamp: string; // ISO
+  lastStatus: Status;
+  lastStatusDate: string; // ISO
+  appliedDate: string;    // ISO or ""
+  statusChanged: number;
+}
+
+/** Count meaningful status changes AFTER the first APPLIED event.
+ *  - SAVED transitions don't count
+ *  - APPLIED itself doesn't count
+ *  - Repeated identical statuses don't count (unless they represent a new
+ *    INTERVIEW/ASSESSMENT stage, which DO count because each entry is a
+ *    distinct stage occurrence in the saved history)
+ */
+export function countStatusChanges(app: Application): number {
+  const hist = app.statusHistory || [];
+  if (hist.length === 0) return 0;
+  const appliedIdx = hist.findIndex((e) => e.status === "APPLIED");
+  const start = appliedIdx === -1 ? 0 : appliedIdx + 1;
+  let count = 0;
+  let prev: Status | undefined = appliedIdx === -1 ? undefined : "APPLIED";
+  for (let i = start; i < hist.length; i++) {
+    const e = hist[i];
+    if (!e || !e.status) continue;
+    if (e.status === "SAVED") continue;
+    // Interview/Assessment repeats are new stages — always count.
+    if (e.status === "INTERVIEW" || e.status === "ASSESSMENT") {
+      count++;
+      prev = e.status;
+      continue;
+    }
+    if (e.status !== prev) {
+      count++;
+      prev = e.status;
+    }
+  }
+  return count;
 }
 
 export function buildStatusTimeline(apps: Application[]): TimelineRow[] {
-  const out: TimelineRow[] = [];
-  for (const a of apps) {
-    const hist = (a.statusHistory && a.statusHistory.length > 0)
-      ? a.statusHistory
-      : [{
-          id: "synth",
-          status: a.status,
-          ts: a.statusChangedAt || a.createdAt,
-          from: undefined as Status | undefined,
-        }];
-    for (const e of hist) {
-      if (!e || !e.ts) continue;
-      out.push({
-        company: a.company,
-        role: a.role,
-        status: e.status,
-        from: e.from,
-        timestamp: e.ts,
-      });
-    }
-  }
-  out.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-  return out;
+  return apps.map((a) => {
+    const hist = a.statusHistory || [];
+    const last = hist.length > 0 ? hist[hist.length - 1] : undefined;
+    const lastStatusDate = last?.ts || a.statusChangedAt || a.updatedAt || a.createdAt;
+    const appliedEvt = hist.find((e) => e.status === "APPLIED");
+    const appliedDate = a.appliedAt || appliedEvt?.ts || "";
+    return {
+      company: a.company,
+      role: a.role,
+      lastStatus: a.status,
+      lastStatusDate,
+      appliedDate,
+      statusChanged: countStatusChanges(a),
+    };
+  });
 }
+
+const fmtDate = (iso: string) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString();
+};
 
 export function exportStatusTimelineJSON(apps: Application[]): string {
   const rows = buildStatusTimeline(apps);
   return JSON.stringify({
-    version: 1,
+    version: 2,
     app: "career-board",
     kind: "status-timeline",
     exportedAt: new Date().toISOString(),
@@ -520,16 +552,15 @@ export function exportStatusTimelineJSON(apps: Application[]): string {
 
 export function exportStatusTimelineXLSX(apps: Application[], filename: string) {
   const rows = buildStatusTimeline(apps).map((r) => ({
-    Company: r.company,
-    Role: r.role,
-    From: r.from || "",
-    Status: r.status,
-    Timestamp: new Date(r.timestamp).toLocaleString(),
-    ISO: r.timestamp,
+    "Company": r.company,
+    "Role": r.role,
+    "Last Status (Date)": r.lastStatus + (r.lastStatusDate ? ` (${fmtDate(r.lastStatusDate)})` : ""),
+    "Applied Date": r.appliedDate ? fmtDate(r.appliedDate) : "",
+    "Status Changed": r.statusChanged,
   }));
-  const headers = ["Company","Role","From","Status","Timestamp","ISO"];
+  const headers = ["Company","Role","Last Status (Date)","Applied Date","Status Changed"];
   const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
-  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 26 }];
+  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 34 }, { wch: 22 }, { wch: 16 }];
   const headerStyle = {
     font: { bold: true, color: { rgb: "FFFFFFFF" }, name: "Calibri", sz: 11 },
     fill: { patternType: "solid", fgColor: { rgb: "FF1F2937" } },
@@ -548,7 +579,7 @@ export function exportStatusTimelineXLSX(apps: Application[], filename: string) 
   const wb = XLSX.utils.book_new();
   wb.Props = {
     Title: "Career Board Status Timeline",
-    Subject: "Status transition history",
+    Subject: "Per-application status summary",
     Author: "Career Board",
     CreatedDate: new Date(),
   };
@@ -578,7 +609,7 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
     doc.setFont(FONT, "normal");
     doc.setFontSize(8);
     doc.setTextColor(110, 110, 110);
-    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} TRANSITIONS`, cx, 76, { align: "center" });
+    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} APPLICATIONS`, cx, 76, { align: "center" });
   }
   function drawFooter() {
     const pageNumber = doc.getCurrentPageInfo().pageNumber;
@@ -594,18 +625,20 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
     }
   }
   const colX = {
-    when:    left,
-    company: left + 130,
-    role:    left + 240,
-    status:  left + 360,
+    company: left,
+    role:    left + 110,
+    last:    left + 230,
+    applied: left + 350,
+    changed: left + 430,
   };
-  const colW = { when: 124, company: 106, role: 116, status: 100 };
+  const colW = { company: 104, role: 114, last: 116, applied: 76, changed: 30 };
   function drawColHeaders() {
     doc.setFont(FONT, "bold"); doc.setFontSize(8); doc.setTextColor(100, 104, 112);
-    doc.text("WHEN",    colX.when,    y);
-    doc.text("COMPANY", colX.company, y);
-    doc.text("ROLE",    colX.role,    y);
-    doc.text("STATUS",  colX.status,  y);
+    doc.text("COMPANY",            colX.company, y);
+    doc.text("ROLE",               colX.role,    y);
+    doc.text("LAST STATUS (DATE)", colX.last,    y);
+    doc.text("APPLIED",            colX.applied, y);
+    doc.text("CHG",                colX.changed, y);
     y += 12;
   }
 
@@ -614,25 +647,27 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
 
   doc.setFont(FONT, "normal"); doc.setFontSize(8);
   rows.forEach((r) => {
-    const when = new Date(r.timestamp).toLocaleString();
-    const statusStr = r.from ? `${r.from} → ${r.status}` : r.status;
+    const lastStr = `${r.lastStatus}${r.lastStatusDate ? " · " + fmtDate(r.lastStatusDate) : ""}`;
+    const appliedStr = r.appliedDate ? fmtDate(r.appliedDate).split(",")[0] : "—";
     const roleLines = doc.splitTextToSize(r.role.toUpperCase(), colW.role) as string[];
     const rowH = Math.max(14, roleLines.length * 11 + 4);
     ensureSpace(rowH);
-    doc.setTextColor(80, 84, 92);
-    doc.text(truncate(doc, when, colW.when), colX.when, y);
     doc.setTextColor(25, 28, 36);
     doc.text(truncate(doc, r.company.toUpperCase(), colW.company), colX.company, y);
     doc.setTextColor(40, 44, 52);
     doc.text(roleLines, colX.role, y);
-    doc.setTextColor(r.status === "REJECTED" ? 200 : 60, r.status === "REJECTED" ? 30 : 64, r.status === "REJECTED" ? 30 : 72);
-    doc.text(truncate(doc, statusStr, colW.status), colX.status, y);
+    doc.setTextColor(r.lastStatus === "REJECTED" ? 200 : 60, r.lastStatus === "REJECTED" ? 30 : 64, r.lastStatus === "REJECTED" ? 30 : 72);
+    doc.text(truncate(doc, lastStr, colW.last), colX.last, y);
+    doc.setTextColor(80, 84, 92);
+    doc.text(truncate(doc, appliedStr, colW.applied), colX.applied, y);
+    doc.setTextColor(40, 44, 52);
+    doc.text(String(r.statusChanged), colX.changed, y);
     y += rowH;
   });
 
   if (rows.length === 0) {
     doc.setFont(FONT, "normal"); doc.setFontSize(10); doc.setTextColor(120,120,120);
-    doc.text("NO TRANSITIONS RECORDED", cx, y + 20, { align: "center" });
+    doc.text("NO RECORDS", cx, y + 20, { align: "center" });
   }
 
   drawFooter();

@@ -295,16 +295,18 @@ export function generatePDF(
     const company = ((a.pinned ? "* " : "") + (a.company || "—")).toUpperCase();
     const country = (countryFullName(a.country) || a.country || "—").toUpperCase();
     const roleRaw = (a.role    || "—").toUpperCase();
-    const status  = a.status;
+    const status  = displayStatus(a);
     const applied = a.appliedAt ? a.appliedAt.slice(0, 10) : "—";
-    const isRejected = status === "REJECTED";
+    const isRejected = a.status === "REJECTED";
 
     doc.setFont(FONT, "normal");
     doc.setFontSize(8);
 
-    // Wrap ROLE — never clip
+    // Wrap ROLE and COMPANY — never clip either.
     const roleLines = doc.splitTextToSize(roleRaw, colW.role) as string[];
-    const rowHeight = Math.max(ROW_H, roleLines.length * LINE_H + 5);
+    const companyLines = doc.splitTextToSize(company, colW.company) as string[];
+    const maxLines = Math.max(roleLines.length, companyLines.length);
+    const rowHeight = Math.max(ROW_H, maxLines * LINE_H + 5);
 
     ensureSpace(rowHeight);
     if (y === TOP_MARGIN) drawColumnHeaders();
@@ -314,7 +316,7 @@ export function generatePDF(
     doc.text(idx, colX.idx, y);
 
     if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(25, 28, 36);
-    doc.text(truncate(doc, company, colW.company), colX.company, y);
+    doc.text(companyLines, colX.company, y);
 
     if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(80, 84, 92);
     doc.text(truncate(doc, country, colW.country), colX.country, y);

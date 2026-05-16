@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Trash2, Pin, PinOff, ExternalLink, Plus, Upload, Download, Eye, Mail, Linkedin } from "lucide-react";
-import { useStore, selectApp, updateApp, removeApp, cryptoId } from "@/lib/store";
+import { X, Trash2, Pin, PinOff, ExternalLink, Plus, Upload, Download, Eye, Mail, Linkedin, Undo2, Redo2, Eraser } from "lucide-react";
+import { useStore, selectApp, updateApp, removeApp, cryptoId, undoStatusChange, redoStatusChange, clearStatusHistory, canUndoStatus, canRedoStatus } from "@/lib/store";
 import { ALL_STATUSES, type DocLink } from "@/lib/types";
 import { StatusLabel } from "../board/StatusLabel";
 import { CountrySelect } from "@/components/ui/CountrySelect";
 import { normalizeCountry } from "@/lib/countries";
 import { putDocBlob, getDocBlob, deleteDocBlob } from "@/lib/db";
+import { displayStatus } from "@/lib/export";
 
 export function DetailDrawer() {
   const id = useStore((s) => s.selectedId);
@@ -26,7 +27,7 @@ export function DetailDrawer() {
       <aside className="fixed top-0 right-0 h-screen w-[min(520px,100vw)] bg-card border-l border-border z-50 flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         <header className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div>
-            <div className="flap-text text-[10px] text-muted-foreground tracking-[0.25em]">APPLICATION</div>
+            <div className="flap-text text-[10px] text-muted-foreground tracking-[0.25em]">APPLICATION · {displayStatus(app)}</div>
             <h2 className="flap-text text-lg tracking-[0.15em] mt-1">{app.company}</h2>
           </div>
           <div className="flex items-center gap-1">
@@ -419,25 +420,73 @@ function Docs({ app }: { app: import("@/lib/types").Application }) {
 
 function StatusHistorySection({ app }: { app: import("@/lib/types").Application }) {
   const history = app.statusHistory || [];
+  const [confirmClear, setConfirmClear] = useState(false);
+  const canUndo = canUndoStatus(app.id);
+  const canRedo = canRedoStatus(app.id);
   return (
     <section>
-      <Label>Status history</Label>
+      <div className="flex items-center justify-between mb-1">
+        <Label>Status history</Label>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => undoStatusChange(app.id)}
+            disabled={!canUndo}
+            title="Undo last status change"
+            className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+          ><Undo2 className="w-3 h-3" /> UNDO</button>
+          <button
+            onClick={() => redoStatusChange(app.id)}
+            disabled={!canRedo}
+            title="Redo last undone status change"
+            className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+          ><Redo2 className="w-3 h-3" /> REDO</button>
+          {!confirmClear ? (
+            <button
+              onClick={() => setConfirmClear(true)}
+              disabled={history.length === 0}
+              title="Clear this job's status history"
+              className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-destructive/50 text-destructive hover:bg-destructive/10 inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+            ><Eraser className="w-3 h-3" /> CLEAR</button>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <button
+                onClick={() => { clearStatusHistory(app.id); setConfirmClear(false); }}
+                className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded bg-destructive text-destructive-foreground"
+              >CONFIRM</button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-border"
+              >CANCEL</button>
+            </span>
+          )}
+        </div>
+      </div>
       {history.length === 0 ? (
         <div className="text-[11px] text-muted-foreground mt-1">No transitions recorded.</div>
       ) : (
         <ol className="mt-1 space-y-1 border-l border-border pl-3">
-          {history.slice().reverse().map((e) => (
-            <li key={e.id} className="relative text-[11px] flap-text tracking-[0.12em]">
-              <span className="absolute -left-[15px] top-[5px] inline-block w-1.5 h-1.5 rounded-full bg-amber" />
-              <div className="flex items-center justify-between gap-2">
-                <span>
-                  {e.from ? <span className="text-muted-foreground">{e.from} → </span> : null}
-                  <StatusLabel value={e.status} />
-                </span>
-                <span className="text-muted-foreground tabular-nums">{new Date(e.ts).toLocaleString()}</span>
-              </div>
-            </li>
-          ))}
+          {history.slice().reverse().map((e, revIdx) => {
+            // Compute stage number for INTERVIEW/ASSESSMENT entries from chronological order.
+            let n: number | undefined;
+            if (e.status === "INTERVIEW" || e.status === "ASSESSMENT") {
+              const origIdx = history.length - 1 - revIdx;
+              n = 0;
+              for (let i = 0; i <= origIdx; i++) if (history[i].status === e.status) n++;
+            }
+            return (
+              <li key={e.id} className="relative text-[11px] flap-text tracking-[0.12em]">
+                <span className="absolute -left-[15px] top-[5px] inline-block w-1.5 h-1.5 rounded-full bg-amber" />
+                <div className="flex items-center justify-between gap-2">
+                  <span>
+                    {e.from ? <span className="text-muted-foreground">{e.from} → </span> : null}
+                    <StatusLabel value={e.status} />
+                    {n !== undefined && <span className="ml-1 text-muted-foreground">{n}</span>}
+                  </span>
+                  <span className="text-muted-foreground tabular-nums">{new Date(e.ts).toLocaleString()}</span>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       )}
     </section>

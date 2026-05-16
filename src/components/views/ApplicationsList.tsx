@@ -81,7 +81,7 @@ export function ApplicationsList({ scope = "ACTIVE" }: { scope?: "ACTIVE" | "ALL
               <div className="flex items-center gap-3">
                 <span className="flap-text text-xs tracking-[0.15em]">{a.pinned ? "★ " : ""}{a.company}</span>
                 <span className="text-[10px] flap-text tracking-[0.2em] text-muted-foreground">{a.role}</span>
-                <span className="ml-auto"><StatusLabel value={a.status} /></span>
+                <span className="ml-auto inline-flex items-center gap-1"><StatusLabel value={a.status} />{(a.status === "INTERVIEW" || a.status === "ASSESSMENT") && <span className="text-[10px] text-muted-foreground flap-text">{(a.statusHistory || []).filter((e) => e.status === a.status).length || 1}</span>}</span>
               </div>
               <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
                 {a.link && <a href={a.link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-amber underline">Posting ↗</a>}

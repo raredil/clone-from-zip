@@ -238,25 +238,39 @@ function setTimer(patch: Partial<TimerState>, persist = true) {
 
 function startTimerLoop() {
   if (timerInterval) return;
+  // Wall-clock derived ticker: never relies on cumulative setInterval ticks
+  // (which drift / get throttled in background tabs). 250ms cadence so the
+  // displayed countdown stays smooth and we never miss the cycle boundary
+  // by more than a quarter second.
   timerInterval = setInterval(() => {
-    if (!state.timer.running) return;
-    const remaining = Math.max(0, state.timer.remainingSec - 1);
-    const totalFocus = state.timer.totalFocusSec + 1;
+    const t = state.timer;
+    if (!t.running || !t.cycleStartedAt) return;
+    const startMs = new Date(t.cycleStartedAt).getTime();
+    const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+    const remaining = Math.max(0, t.durationSec - elapsed);
     if (remaining === 0) {
-      state.timer = { ...state.timer, remainingSec: 0, totalFocusSec: totalFocus };
+      // Boundary — fire exactly once per cycle. finishCycle mutates
+      // cycleStartedAt (continuous) or running=false (normal) so this
+      // branch cannot re-enter for the same cycle.
+      state.timer = { ...t, remainingSec: 0, totalFocusSec: t.totalFocusSec + (t.remainingSec || 0) };
       finishCycle();
-    } else {
-      state.timer = { ...state.timer, remainingSec: remaining, totalFocusSec: totalFocus };
+      return;
+    }
+    if (remaining !== t.remainingSec) {
+      const totalFocus = t.totalFocusSec + (t.remainingSec - remaining);
+      state.timer = { ...t, remainingSec: remaining, totalFocusSec: totalFocus };
+      // Persist sparingly to avoid IDB write storms.
       if (remaining % 5 === 0) db.setTimer(state.timer);
       emit();
     }
-  }, 1000);
+  }, 250);
 }
 
 export function startTimer() {
   const isResume = state.timer.remainingSec > 0 && state.timer.remainingSec < state.timer.durationSec;
   const now = new Date().toISOString();
-  // Start a new session if there isn't an active one (or if user pressed start fresh)
+  // Try to unlock audio on this gesture so cycle alarms can play later.
+  unlockAudio().catch(() => {});
   if (!state.session.active || !isResume) {
     state.session = {
       ...defaultSession(),
@@ -273,16 +287,22 @@ export function startTimer() {
   } else {
     state.session = { ...state.session, kind: state.timer.kind, mode: state.timer.mode };
   }
+  // When resuming, anchor cycleStartedAt so that elapsed = duration - remaining.
+  const remainingSec = isResume ? state.timer.remainingSec : state.timer.durationSec;
+  const anchor = new Date(Date.now() - (state.timer.durationSec - remainingSec) * 1000).toISOString();
   setTimer({
-    remainingSec: isResume ? state.timer.remainingSec : state.timer.durationSec,
+    remainingSec,
     running: true,
     startedAt: now,
-    cycleStartedAt: state.timer.cycleStartedAt ?? now,
+    cycleStartedAt: anchor,
     cycleStartCount: isResume ? state.timer.cycleStartCount : currentCycleBaseline(),
   });
   pushActivity("TIMER", `Started ${state.timer.kind} ${state.timer.mode} session (${state.timer.durationSec / 60}m)`);
 }
-export function pauseTimer() { setTimer({ running: false }); }
+export function pauseTimer() {
+  // On pause, stop deriving from wall-clock by clearing cycleStartedAt.
+  setTimer({ running: false, cycleStartedAt: undefined });
+}
 export function resetTimer() {
   stopAlert();
   setTimer({ running: false, remainingSec: state.timer.durationSec, cycleStartedAt: undefined });

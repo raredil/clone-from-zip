@@ -88,6 +88,18 @@ export function exportPrintableHTML(apps: Application[], title: string): string 
 
 function esc(s: string) { return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]!)); }
 
+/** Compute display string for an application's status, adding stage number
+ *  for INTERVIEW / ASSESSMENT (e.g. "INTERVIEW 3"). Uses statusHistory. */
+export function displayStatus(a: Application): string {
+  const s = a.status;
+  if (s !== "INTERVIEW" && s !== "ASSESSMENT") return s;
+  const hist = a.statusHistory || [];
+  let n = 0;
+  for (const e of hist) if (e && e.status === s) n++;
+  if (n === 0) n = 1;
+  return `${s} ${n}`;
+}
+
 /* ============================================================
  * PDF — operational tracking manifest
  * Compact, mechanical, mono-styled; up to 3 layered sorts.

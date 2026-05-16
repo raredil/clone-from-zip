@@ -62,6 +62,10 @@ export interface FullBackup {
   presets?: unknown[];
   settings?: unknown;
   timer?: unknown;
+  /** Snapshot of derived analytics at export time. Source data (apps + status
+   *  history + timer) is always included so Analytics can be recomputed after
+   *  import; this field is informational and safe to ignore on import. */
+  analytics?: unknown;
 }
 
 export async function exportJSON(
@@ -90,13 +94,26 @@ export async function exportJSON(
     cloned.docs = docs;
     appsWithFiles.push(cloned);
   }
+  // Analytics snapshot — derived from source data (apps + status history + timer).
+  // Importers can recompute from `apps`; this snapshot lets the Analytics view
+  // restore immediately and provides a reference for sanity-checking.
+  let analytics: unknown;
+  try {
+    const { computeAnalytics } = await import("./analytics");
+    analytics = {
+      computedAt: new Date().toISOString(),
+      ...computeAnalytics(apps),
+      timer: extras?.timer ?? null,
+    };
+  } catch {/* best-effort */}
   const payload: FullBackup = {
-    version: 3,
+    version: 4,
     app: "career-board",
     exportedAt: new Date().toISOString(),
     count: appsWithFiles.length,
     apps: appsWithFiles,
     ...(extras || {}),
+    analytics,
   };
   return JSON.stringify(payload, null, 2);
 }

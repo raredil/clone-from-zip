@@ -196,7 +196,7 @@ export function generatePDF(
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const cx = pageWidth / 2;
-  const contentWidth = Math.min(440, pageWidth - 80);
+  const contentWidth = Math.min(490, pageWidth - 60);
   const left = cx - contentWidth / 2;
   const right = cx + contentWidth / 2;
 

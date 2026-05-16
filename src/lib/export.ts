@@ -489,9 +489,10 @@ export function exportXLSX(apps: Application[], filename: string) {
 export interface TimelineRow {
   company: string;
   role: string;
-  lastStatus: Status;
-  lastStatusDate: string; // ISO
-  appliedDate: string;    // ISO or ""
+  lastStatus: string;       // already includes stage number for INTERVIEW/ASSESSMENT
+  lastStatusBase: Status;   // raw status for color/sort
+  lastStatusDate: string;   // ISO
+  appliedDate: string;      // ISO or ""
   statusChanged: number;
 }
 

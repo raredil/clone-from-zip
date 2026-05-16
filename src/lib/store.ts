@@ -33,7 +33,7 @@ const state: State = {
   timer: defaultTimer(),
   session: defaultSession(),
   sessionSummary: null,
-  settings: { notifications: true, sound: true, theme: "dark" },
+  settings: { notifications: true, sound: true },
   filters: emptyFilters(),
   selectedId: null,
   view: "DASHBOARD",

@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const ready = useInitStore();
   useThemeSync();
-  const themePref = useStore((s) => s.settings.theme || "dark");
+  
   const view = useStore((s) => s.view);
   const apps = useStore((s) => s.apps);
   const filters = useStore((s) => s.filters);

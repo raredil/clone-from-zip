@@ -622,7 +622,7 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const cx = pageWidth / 2;
-  const contentWidth = Math.min(740, pageWidth - 60);
+  const contentWidth = Math.min(760, pageWidth - 40);
   const left = cx - contentWidth / 2;
   const FONT = "courier";
   const TOP_MARGIN = 110;
@@ -630,15 +630,14 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
   let y = TOP_MARGIN;
   const generatedAt = new Date().toLocaleString();
 
-  // Column layout — Company left, everything else centered around its anchor x.
-  // Anchor x is the column center for center-aligned columns.
+  // Column layout — ROLE wider than COMPANY. Company left-aligned, all others centered.
   const cols = {
-    company:    { x: left,                          w: 170, align: "left"   as const },
-    role:       { x: left + 170 + 70,               w: 140, align: "center" as const },
-    lastStatus: { x: left + 170 + 140 + 90,         w: 120, align: "center" as const },
-    lastDate:   { x: left + 170 + 140 + 120 + 100,  w: 130, align: "center" as const },
-    appliedDate:{ x: left + 170 + 140 + 120 + 130 + 90, w: 110, align: "center" as const },
-    changed:    { x: left + 170 + 140 + 120 + 130 + 110 + 60, w: 50,  align: "center" as const },
+    company:    { x: left,        w: 130, align: "left"   as const },
+    role:       { x: left + 145,  w: 200, align: "center" as const },
+    lastStatus: { x: left + 360,  w: 100, align: "center" as const },
+    lastDate:   { x: left + 475,  w: 130, align: "center" as const },
+    appliedDate:{ x: left + 620,  w: 100, align: "center" as const },
+    changed:    { x: left + 735,  w: 25,  align: "center" as const },
   };
 
   function drawHeader() {

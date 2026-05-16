@@ -315,11 +315,7 @@
 .light .text-muted-foreground { color: var(--muted-foreground); }
 /* Hover states */
 .light .hover\:bg-accent:hover { background-color: var(--accent); }
-/* Pinned rows in light mode — keep amber legible */
-.light .row-pinned,
-.light .row-pinned .flap-text,
-.light .row-pinned td,
-.light .row-pinned span { color: oklch(0.18 0.04 60) !important; }
+/* Pinned rows in light mode — no special color (asterisk marker only) */
 
 /* ============ Global pointer cursor for clickable elements ============ */
 button:not(:disabled),

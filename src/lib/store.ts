@@ -588,6 +588,14 @@ export function useInitStore() {
 function sanitizeApp(a: Application): Application | null {
   if (!a || !a.id || !a.company) return null;
   const now = new Date().toISOString();
+  // Strip any transient base64 `data` payload from doc entries — file bytes
+  // belong in docBlobs, not on the Application record.
+  const cleanedDocs = (a.docs ?? []).map((d) => {
+    if (!d) return d;
+    const copy = { ...d } as typeof d & { data?: string };
+    delete copy.data;
+    return copy;
+  });
   return {
     ...a,
     pinned: a.pinned ?? false,
@@ -595,11 +603,29 @@ function sanitizeApp(a: Application): Application | null {
     tags: a.tags ?? [],
     stages: a.stages ?? [],
     reminders: a.reminders ?? [],
-    docs: a.docs ?? [],
+    docs: cleanedDocs,
     createdAt: a.createdAt ?? now,
     updatedAt: a.updatedAt ?? now,
     status: a.status ?? "SAVED",
   };
+}
+
+/** Walk imported apps, decode any base64 file payloads carried inline and
+ *  write them into the docBlobs IndexedDB store so uploaded files survive
+ *  the round-trip across devices. Safe to call before clearing docBlobs
+ *  in REPLACE mode (we call this AFTER the clear). */
+async function restoreImportedBlobs(apps: Application[]): Promise<void> {
+  for (const a of apps) {
+    if (!a || !Array.isArray(a.docs)) continue;
+    for (const d of a.docs as Array<{ kind?: string; blobId?: string; mime?: string; data?: string }>) {
+      if (d && d.kind === "file" && d.blobId && typeof d.data === "string") {
+        try {
+          const { base64ToBlob } = await import("./export");
+          await db.putDocBlob(d.blobId, base64ToBlob(d.data, d.mime));
+        } catch {/* ignore — metadata still preserved */}
+      }
+    }
+  }
 }
 
 function dedupeKey(a: Application): string {
@@ -609,9 +635,24 @@ function dedupeKey(a: Application): string {
   return `crc:${norm(a.company)}|${norm(a.role)}|${norm(a.country)}`;
 }
 
+function mergeDocs(existing: Application["docs"], incoming: Application["docs"]): Application["docs"] {
+  const out = [...(existing || [])];
+  const seenIds = new Set(out.map((d) => d.id));
+  const seenBlobs = new Set(out.filter((d) => d.blobId).map((d) => d.blobId as string));
+  for (const d of incoming || []) {
+    if (!d) continue;
+    if (seenIds.has(d.id)) continue;
+    if (d.blobId && seenBlobs.has(d.blobId)) continue;
+    out.push(d);
+    seenIds.add(d.id);
+    if (d.blobId) seenBlobs.add(d.blobId);
+  }
+  return out;
+}
+
 export async function bulkImport(apps: Application[]) {
-  // MERGE — preserve all existing records; add imported ones.
-  // Dedupe by id first, then by link / company+role+country to avoid creating duplicates.
+  // MERGE — preserve all existing records and existing uploaded files; add imported ones.
+  await restoreImportedBlobs(apps); // write file bytes into docBlobs before sanitize strips `data`
   const byId = new Map(state.apps.map((a) => [a.id, a]));
   const byKey = new Map(state.apps.map((a) => [dedupeKey(a), a]));
   let added = 0;
@@ -620,9 +661,9 @@ export async function bulkImport(apps: Application[]) {
     const merged = sanitizeApp(raw);
     if (!merged) continue;
     if (byId.has(merged.id)) {
-      // Same id — keep newer updatedAt to avoid reverting edits.
       const existing = byId.get(merged.id)!;
-      const winner = (merged.updatedAt || "") > (existing.updatedAt || "") ? merged : existing;
+      const newer = (merged.updatedAt || "") > (existing.updatedAt || "") ? merged : existing;
+      const winner: Application = { ...newer, docs: mergeDocs(existing.docs, merged.docs) };
       byId.set(merged.id, winner);
       byKey.set(dedupeKey(winner), winner);
       updated++;
@@ -631,10 +672,10 @@ export async function bulkImport(apps: Application[]) {
     const k = dedupeKey(merged);
     const dupe = byKey.get(k);
     if (dupe) {
-      // Same logical record — keep existing id, take newer fields.
-      const winner: Application = (merged.updatedAt || "") > (dupe.updatedAt || "")
+      const newer = (merged.updatedAt || "") > (dupe.updatedAt || "")
         ? { ...merged, id: dupe.id }
         : dupe;
+      const winner: Application = { ...newer, docs: mergeDocs(dupe.docs, merged.docs) };
       byId.set(dupe.id, winner);
       byKey.set(k, winner);
       updated++;
@@ -692,7 +733,7 @@ export async function bulkImportExtras(payload: {
 }
 
 export async function bulkImportReplace(apps: Application[]) {
-  // REPLACE — wipe current apps and replace with imported set
+  // REPLACE — wipe current apps + uploaded file blobs, then restore from import.
   const cleaned: Application[] = [];
   for (const raw of apps) {
     const s = sanitizeApp(raw);
@@ -701,7 +742,9 @@ export async function bulkImportReplace(apps: Application[]) {
   try {
     const d = await db.getDB();
     await d.clear("apps");
+    if (d.objectStoreNames.contains("docBlobs")) await d.clear("docBlobs");
   } catch {/* ignore */}
+  await restoreImportedBlobs(apps); // write imported file bytes into the now-empty docBlobs
   state.apps = cleaned;
   state.selectedId = null;
   await db.bulkPutApps(state.apps);

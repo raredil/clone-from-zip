@@ -3,6 +3,25 @@ import jsPDF from "jspdf";
 import type { Application, FilterState, SortKey, Status } from "./types";
 import { applySort } from "./filter";
 import { countryFullName } from "./countries";
+import { getDocBlob } from "./db";
+
+// --- Base64 helpers for embedding/restoring uploaded file blobs in JSON. ---
+export async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)) as number[]);
+  }
+  return btoa(bin);
+}
+export function base64ToBlob(b64: string, mime?: string): Blob {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime || "application/octet-stream" });
+}
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -45,16 +64,38 @@ export interface FullBackup {
   timer?: unknown;
 }
 
-export function exportJSON(
+export async function exportJSON(
   apps: Application[],
   extras?: { activity?: unknown[]; presets?: unknown[]; settings?: unknown; timer?: unknown },
-): string {
+): Promise<string> {
+  // Deep-clone apps and embed file blob data (base64) onto each file-kind doc
+  // so the backup is fully portable to another laptop.
+  const appsWithFiles: Application[] = [];
+  for (const a of apps) {
+    const cloned: Application = { ...a, docs: [...(a.docs || [])] };
+    const docs = [] as typeof cloned.docs;
+    for (const d of cloned.docs) {
+      if (d && d.kind === "file" && d.blobId) {
+        try {
+          const blob = await getDocBlob(d.blobId);
+          if (blob) {
+            const data = await blobToBase64(blob);
+            docs.push({ ...d, mime: d.mime || blob.type, size: d.size ?? blob.size, data } as typeof d & { data: string });
+            continue;
+          }
+        } catch {/* drop blob silently, keep metadata */}
+      }
+      docs.push(d);
+    }
+    cloned.docs = docs;
+    appsWithFiles.push(cloned);
+  }
   const payload: FullBackup = {
-    version: 2,
+    version: 3,
     app: "career-board",
     exportedAt: new Date().toISOString(),
-    count: apps.length,
-    apps,
+    count: appsWithFiles.length,
+    apps: appsWithFiles,
     ...(extras || {}),
   };
   return JSON.stringify(payload, null, 2);
@@ -196,7 +237,7 @@ export function generatePDF(
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const cx = pageWidth / 2;
-  const contentWidth = Math.min(440, pageWidth - 80);
+  const contentWidth = Math.min(490, pageWidth - 60);
   const left = cx - contentWidth / 2;
   const right = cx + contentWidth / 2;
 
@@ -260,23 +301,21 @@ export function generatePDF(
   drawHeader();
 
   // ---- Borderless table layout ----
-  // Columns: # | COMPANY | COUNTRY | ROLE (wraps) | STATUS | APPLIED
-  // ROLE gets the most flexible space and wraps to multiple lines when long
-  // so POSITION text is never cut off.
+  // Columns: # | COMPANY | COUNTRY | ROLE (wraps) | STATUS (centered) | APPLIED (centered)
   const colX = {
     idx:     left,
     company: left + 24,
     country: left + 128,
     role:    left + 204,
-    status:  left + 332,
-    applied: left + 388,
+    status:  left + 318,
+    applied: left + 410,
   };
   const colW = {
     company: 100,
-    country: 72,
-    role:    124, // widest — wraps when needed
-    status:  52,
-    applied: 50,
+    country: 70,
+    role:    110, // wraps when needed
+    status:  82, // widened so "ASSESSMENT 10" / "FOLLOW-UP" fit
+    applied: 70,
   };
   const ROW_H = 16;
   const LINE_H = 11;
@@ -289,8 +328,8 @@ export function generatePDF(
     doc.text("COMPANY", colX.company, y);
     doc.text("COUNTRY", colX.country, y);
     doc.text("ROLE",    colX.role,    y);
-    doc.text("STATUS",  colX.status,  y);
-    doc.text("APPLIED", colX.applied, y);
+    doc.text("STATUS",  colX.status + colW.status / 2, y, { align: "center" });
+    doc.text("APPLIED", colX.applied + colW.applied / 2, y, { align: "center" });
     y += 6;
     // very subtle dotted separator under header (no border line)
     doc.setTextColor(210, 210, 210);
@@ -337,10 +376,10 @@ export function generatePDF(
     doc.text(roleLines, colX.role, y);
 
     if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(60, 64, 72);
-    doc.text(truncate(doc, status, colW.status), colX.status, y);
+    doc.text(truncate(doc, status, colW.status), colX.status + colW.status / 2, y, { align: "center" });
 
     if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(110, 114, 122);
-    doc.text(applied, colX.applied, y);
+    doc.text(applied, colX.applied + colW.applied / 2, y, { align: "center" });
 
     y += rowHeight;
   });
@@ -624,7 +663,7 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const cx = pageWidth / 2;
-  const contentWidth = Math.min(740, pageWidth - 60);
+  const contentWidth = Math.min(760, pageWidth - 40);
   const left = cx - contentWidth / 2;
   const FONT = "courier";
   const TOP_MARGIN = 110;
@@ -632,15 +671,14 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
   let y = TOP_MARGIN;
   const generatedAt = new Date().toLocaleString();
 
-  // Column layout — Company left, everything else centered around its anchor x.
-  // Anchor x is the column center for center-aligned columns.
+  // Column layout — ROLE wider than COMPANY. Company left-aligned, all others centered.
   const cols = {
-    company:    { x: left,                          w: 170, align: "left"   as const },
-    role:       { x: left + 170 + 70,               w: 140, align: "center" as const },
-    lastStatus: { x: left + 170 + 140 + 90,         w: 120, align: "center" as const },
-    lastDate:   { x: left + 170 + 140 + 120 + 100,  w: 130, align: "center" as const },
-    appliedDate:{ x: left + 170 + 140 + 120 + 130 + 90, w: 110, align: "center" as const },
-    changed:    { x: left + 170 + 140 + 120 + 130 + 110 + 60, w: 50,  align: "center" as const },
+    company:    { x: left,        w: 130, align: "left"   as const },
+    role:       { x: left + 145,  w: 200, align: "center" as const },
+    lastStatus: { x: left + 360,  w: 100, align: "center" as const },
+    lastDate:   { x: left + 475,  w: 130, align: "center" as const },
+    appliedDate:{ x: left + 620,  w: 100, align: "center" as const },
+    changed:    { x: left + 735,  w: 25,  align: "center" as const },
   };
 
   function drawHeader() {

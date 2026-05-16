@@ -90,8 +90,10 @@ export function Settings() {
     setPending(null);
   }
 
-  function downloadBackup() {
-    const json = exportJSON(apps, { activity, presets, settings, timer });
+  async function downloadBackup() {
+    const json = await exportJSON(apps, { activity, presets, settings, timer });
+    const mb = json.length / (1024 * 1024);
+    if (mb > 50 && !window.confirm(`This backup is large (~${mb.toFixed(1)} MB) because it includes uploaded files. Continue?`)) return;
     downloadFile(`career-board-backup-${new Date().toISOString().slice(0, 10)}.json`, json, "application/json");
   }
 

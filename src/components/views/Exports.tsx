@@ -35,8 +35,10 @@ export function Exports() {
       apps.filter((a) => a.status === "REJECTED");
     exportXLSX(set, `career-board-${scope.toLowerCase()}-${stamp()}.xlsx`);
   }
-  function downloadJSON() {
-    const json = exportJSON(apps, { activity, presets, settings, timer });
+  async function downloadJSON() {
+    const json = await exportJSON(apps, { activity, presets, settings, timer });
+    const mb = json.length / (1024 * 1024);
+    if (mb > 50 && !window.confirm(`This backup is large (~${mb.toFixed(1)} MB) because it includes uploaded files. Continue?`)) return;
     downloadFile(`career-board-backup-${stamp()}.json`, json, "application/json");
   }
 

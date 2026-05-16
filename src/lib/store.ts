@@ -171,6 +171,14 @@ export async function removeApp(id: string) {
   state.apps = state.apps.filter((a) => a.id !== id);
   if (state.selectedId === id) state.selectedId = null;
   await db.deleteApp(id);
+  // Clean up locally-stored uploaded document blobs for this app.
+  if (app && app.docs) {
+    for (const d of app.docs) {
+      if (d.kind === "file" && d.blobId) {
+        db.deleteDocBlob(d.blobId).catch(() => {});
+      }
+    }
+  }
   if (app) await pushActivity("DELETE", `Deleted ${app.company}`, id);
   emit();
 }

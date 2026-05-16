@@ -42,7 +42,7 @@ function Index() {
 
   return (
     <div className="min-h-screen p-3 lg:p-5">
-      <Toaster position="top-right" theme={themePref} />
+      <Toaster position="top-right" theme="dark" />
       <div className="max-w-[1600px] mx-auto flex gap-4">
         <SideMenu />
 

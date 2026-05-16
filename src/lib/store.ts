@@ -147,11 +147,22 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
   const prev = state.apps[idx];
   const now = new Date().toISOString();
   const next: Application = { ...prev, ...patch, updatedAt: now };
-  if (patch.status && patch.status !== prev.status) {
+  // Record a status history entry whenever a status is supplied AND
+  // either the status differs from the previous one, OR the user clicked
+  // INTERVIEW / ASSESSMENT again (each click is a distinct new stage,
+  // even if the base status didn't change).
+  const isStageStatus = patch.status === "INTERVIEW" || patch.status === "ASSESSMENT";
+  if (patch.status && (patch.status !== prev.status || isStageStatus)) {
     next.statusChangedAt = now;
     const evt = { id: cryptoId(), status: patch.status, ts: now, from: prev.status };
     next.statusHistory = [...(prev.statusHistory || []), evt];
-    pushActivity("STATUS", `${next.company}: ${prev.status} → ${patch.status}`, id);
+    if (patch.status !== prev.status) {
+      pushActivity("STATUS", `${next.company}: ${prev.status} → ${patch.status}`, id);
+    } else {
+      // Repeated stage click — count and log the new stage number.
+      const n = (prev.statusHistory || []).filter((e) => e.status === patch.status).length + 1;
+      pushActivity("STATUS", `${next.company}: ${patch.status} ${n}`, id);
+    }
     if (patch.status === "APPLIED" && !next.appliedAt) {
       next.appliedAt = now;
     }

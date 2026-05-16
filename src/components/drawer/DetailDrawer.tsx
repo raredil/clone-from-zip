@@ -289,37 +289,129 @@ function Reminders({ app }: { app: import("@/lib/types").Application }) {
 }
 
 function Docs({ app }: { app: import("@/lib/types").Application }) {
+  const fileInput = useRef<HTMLInputElement | null>(null);
+
+  async function handleUpload(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const newDocs: DocLink[] = [];
+    for (const f of Array.from(files)) {
+      const blobId = cryptoId();
+      try {
+        await putDocBlob(blobId, f);
+      } catch (e) {
+        console.warn("[docs] upload failed", e);
+        continue;
+      }
+      newDocs.push({
+        id: cryptoId(),
+        name: f.name,
+        url: "",
+        kind: "file",
+        blobId,
+        mime: f.type || "application/octet-stream",
+        size: f.size,
+        addedAt: new Date().toISOString(),
+      });
+    }
+    if (newDocs.length) {
+      updateApp(app.id, { docs: [...app.docs, ...newDocs] });
+    }
+  }
+
+  async function openBlob(d: DocLink, mode: "view" | "download") {
+    if (!d.blobId) return;
+    const blob = await getDocBlob(d.blobId);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    if (mode === "view") {
+      const w = window.open(url, "_blank");
+      if (!w) window.location.href = url;
+    } else {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = d.name || "document";
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  async function removeDoc(d: DocLink) {
+    if (d.kind === "file" && d.blobId) {
+      await deleteDocBlob(d.blobId);
+    }
+    updateApp(app.id, { docs: app.docs.filter((x) => x.id !== d.id) });
+  }
+
+  function fmtSize(n?: number) {
+    if (!n && n !== 0) return "";
+    if (n < 1024) return `${n}B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
+    return `${(n / 1024 / 1024).toFixed(1)}MB`;
+  }
+
   return (
     <section>
       <div className="flex items-center justify-between mb-1">
-        <Label>Documents & links</Label>
-        <button
-          onClick={() => updateApp(app.id, { docs: [...app.docs, { id: cryptoId(), name: "Resume", url: "" }] })}
-          className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"
-        ><Plus className="w-3 h-3" /> ADD</button>
+        <Label>Documents &amp; links</Label>
+        <div className="flex items-center gap-1">
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => { handleUpload(e.target.files); e.target.value = ""; }}
+          />
+          <button
+            onClick={() => fileInput.current?.click()}
+            className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"
+          ><Upload className="w-3 h-3" /> UPLOAD</button>
+          <button
+            onClick={() => updateApp(app.id, { docs: [...app.docs, { id: cryptoId(), name: "Resume", url: "", kind: "link" }] })}
+            className="text-[10px] flap-text tracking-[0.2em] px-2 py-1 rounded border border-border hover:bg-accent inline-flex items-center gap-1"
+          ><Plus className="w-3 h-3" /> LINK</button>
+        </div>
       </div>
       <div className="space-y-1">
         {app.docs.length === 0 && <div className="text-[11px] text-muted-foreground">No documents.</div>}
-        {app.docs.map((d) => (
-          <div key={d.id} className="flex items-center gap-2 bg-input/40 border border-border rounded px-2 py-1.5">
-            <input
-              defaultValue={d.name}
-              onBlur={(e) => updateApp(app.id, { docs: app.docs.map((x) => x.id === d.id ? { ...x, name: e.target.value } : x) })}
-              className="w-32 bg-transparent text-xs outline-none"
-            />
-            <input
-              defaultValue={d.url}
-              onBlur={(e) => updateApp(app.id, { docs: app.docs.map((x) => x.id === d.id ? { ...x, url: e.target.value } : x) })}
-              className="flex-1 bg-transparent text-xs outline-none"
-              placeholder="URL"
-            />
-            {d.url && <a href={d.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground"><ExternalLink className="w-3 h-3" /></a>}
-            <button
-              onClick={() => updateApp(app.id, { docs: app.docs.filter((x) => x.id !== d.id) })}
-              className="text-muted-foreground hover:text-destructive"
-            ><X className="w-3 h-3" /></button>
-          </div>
-        ))}
+        {app.docs.map((d) => {
+          const isFile = d.kind === "file";
+          return (
+            <div key={d.id} className="flex items-center gap-2 bg-input/40 border border-border rounded px-2 py-1.5">
+              <input
+                defaultValue={d.name}
+                onBlur={(e) => updateApp(app.id, { docs: app.docs.map((x) => x.id === d.id ? { ...x, name: e.target.value } : x) })}
+                className="w-32 bg-transparent text-xs outline-none"
+              />
+              {isFile ? (
+                <span className="flex-1 text-[10px] text-muted-foreground truncate" title={`${d.mime || ""} · ${fmtSize(d.size)}`}>
+                  {(d.mime || "file").split("/").pop()} · {fmtSize(d.size)}
+                </span>
+              ) : (
+                <input
+                  defaultValue={d.url}
+                  onBlur={(e) => updateApp(app.id, { docs: app.docs.map((x) => x.id === d.id ? { ...x, url: e.target.value } : x) })}
+                  className="flex-1 bg-transparent text-xs outline-none"
+                  placeholder="URL"
+                />
+              )}
+              {isFile ? (
+                <>
+                  <button onClick={() => openBlob(d, "view")} className="text-muted-foreground hover:text-foreground" aria-label="View"><Eye className="w-3 h-3" /></button>
+                  <button onClick={() => openBlob(d, "download")} className="text-muted-foreground hover:text-foreground" aria-label="Download"><Download className="w-3 h-3" /></button>
+                </>
+              ) : (
+                d.url && <a href={d.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground"><ExternalLink className="w-3 h-3" /></a>
+              )}
+              <button
+                onClick={() => removeDoc(d)}
+                className="text-muted-foreground hover:text-destructive"
+                aria-label="Remove"
+              ><X className="w-3 h-3" /></button>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

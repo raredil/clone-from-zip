@@ -192,6 +192,11 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div className="flap-text text-[9px] tracking-[0.25em] text-muted-foreground">{children}</div>;
 }
 
+function isValidUrl(s?: string): boolean {
+  if (!s) return false;
+  try { new URL(s); return true; } catch { return false; }
+}
+
 function Field({ label, value, onChange, className }: { label: string; value: string; onChange: (v: string) => void; className?: string }) {
   return (
     <div className={className}>

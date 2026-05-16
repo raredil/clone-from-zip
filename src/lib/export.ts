@@ -570,22 +570,36 @@ export function exportStatusTimelineXLSX(apps: Application[], filename: string) 
   const rows = buildStatusTimeline(apps).map((r) => ({
     "Company": r.company,
     "Role": r.role,
-    "Last Status (Date)": r.lastStatus + (r.lastStatusDate ? ` (${fmtDate(r.lastStatusDate)})` : ""),
+    "Last Status": r.lastStatus,
+    "Last Status Date": r.lastStatusDate ? fmtDate(r.lastStatusDate) : "",
     "Applied Date": r.appliedDate ? fmtDate(r.appliedDate) : "",
     "Status Changed": r.statusChanged,
   }));
-  const headers = ["Company","Role","Last Status (Date)","Applied Date","Status Changed"];
+  const headers = ["Company","Role","Last Status","Last Status Date","Applied Date","Status Changed"];
   const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
-  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 34 }, { wch: 22 }, { wch: 16 }];
-  const headerStyle = {
+  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 16 }];
+  const baseHeaderStyle = {
     font: { bold: true, color: { rgb: "FFFFFFFF" }, name: "Calibri", sz: 11 },
     fill: { patternType: "solid", fgColor: { rgb: "FF1F2937" } },
-    alignment: { horizontal: "left", vertical: "center" },
     border: { bottom: { style: "thin", color: { rgb: "FF111827" } } },
   };
   for (let c = 0; c < headers.length; c++) {
     const addr = XLSX.utils.encode_cell({ r: 0, c });
-    if (ws[addr]) (ws[addr] as Record<string, unknown>).s = headerStyle;
+    if (!ws[addr]) continue;
+    (ws[addr] as Record<string, unknown>).s = {
+      ...baseHeaderStyle,
+      alignment: { horizontal: c === 0 ? "left" : "center", vertical: "center" },
+    };
+  }
+  // Body alignment: Company left, all others center.
+  for (let r = 1; r <= rows.length; r++) {
+    for (let c = 0; c < headers.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      if (!ws[addr]) continue;
+      const cell = ws[addr] as Record<string, unknown>;
+      const prev = (cell.s as Record<string, unknown>) || {};
+      cell.s = { ...prev, alignment: { horizontal: c === 0 ? "left" : "center", vertical: "center" } };
+    }
   }
   const lastColLetter = XLSX.utils.encode_col(headers.length - 1);
   ws["!autofilter"] = { ref: `A1:${lastColLetter}${rows.length + 1}` };
@@ -605,27 +619,39 @@ export function exportStatusTimelineXLSX(apps: Application[], filename: string) 
 
 export function generateStatusTimelinePDF(apps: Application[]): { url: string; blob: Blob; filename: string } {
   const rows = buildStatusTimeline(apps);
-  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  // Landscape — Status Timeline only. Normal PDF stays portrait.
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const cx = pageWidth / 2;
-  const contentWidth = Math.min(460, pageWidth - 80);
+  const contentWidth = Math.min(740, pageWidth - 60);
   const left = cx - contentWidth / 2;
   const FONT = "courier";
-  const TOP_MARGIN = 130;
-  const BOTTOM_LIMIT = pageHeight - 60;
+  const TOP_MARGIN = 110;
+  const BOTTOM_LIMIT = pageHeight - 50;
   let y = TOP_MARGIN;
   const generatedAt = new Date().toLocaleString();
+
+  // Column layout — Company left, everything else centered around its anchor x.
+  // Anchor x is the column center for center-aligned columns.
+  const cols = {
+    company:    { x: left,                          w: 170, align: "left"   as const },
+    role:       { x: left + 170 + 70,               w: 140, align: "center" as const },
+    lastStatus: { x: left + 170 + 140 + 90,         w: 120, align: "center" as const },
+    lastDate:   { x: left + 170 + 140 + 120 + 100,  w: 130, align: "center" as const },
+    appliedDate:{ x: left + 170 + 140 + 120 + 130 + 90, w: 110, align: "center" as const },
+    changed:    { x: left + 170 + 140 + 120 + 130 + 110 + 60, w: 50,  align: "center" as const },
+  };
 
   function drawHeader() {
     doc.setFont(FONT, "bold");
     doc.setFontSize(13);
     doc.setTextColor(20, 24, 32);
-    doc.text("CAREER BOARD — STATUS TIMELINE", cx, 56, { align: "center" });
+    doc.text("CAREER BOARD — STATUS TIMELINE", cx, 50, { align: "center" });
     doc.setFont(FONT, "normal");
     doc.setFontSize(8);
     doc.setTextColor(110, 110, 110);
-    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} APPLICATIONS`, cx, 76, { align: "center" });
+    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} APPLICATIONS`, cx, 70, { align: "center" });
   }
   function drawFooter() {
     const pageNumber = doc.getCurrentPageInfo().pageNumber;
@@ -633,29 +659,28 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
     doc.setFont(FONT, "normal");
     doc.setFontSize(7);
     doc.setTextColor(120, 120, 120);
-    doc.text(`${generatedAt}   ·   PAGE ${pageNumber} / ${totalPages}`, cx, pageHeight - 24, { align: "center" });
+    doc.text(`${generatedAt}   ·   PAGE ${pageNumber} / ${totalPages}`, cx, pageHeight - 20, { align: "center" });
+  }
+  function drawCell(text: string, col: { x: number; w: number; align: "left" | "center" }, yPos: number) {
+    const t = truncate(doc, text, col.w);
+    if (col.align === "center") doc.text(t, col.x + col.w / 2, yPos, { align: "center" });
+    else doc.text(t, col.x, yPos);
+  }
+  function drawColHeaders() {
+    doc.setFont(FONT, "bold"); doc.setFontSize(8); doc.setTextColor(100, 104, 112);
+    drawCell("COMPANY",          cols.company,    y);
+    drawCell("ROLE",             cols.role,       y);
+    drawCell("LAST STATUS",      cols.lastStatus, y);
+    drawCell("LAST STATUS DATE", cols.lastDate,   y);
+    drawCell("APPLIED DATE",     cols.appliedDate,y);
+    drawCell("CHG",              cols.changed,    y);
+    y += 14;
   }
   function ensureSpace(needed: number) {
     if (y + needed > BOTTOM_LIMIT) {
       drawFooter(); doc.addPage(); y = TOP_MARGIN; drawHeader(); drawColHeaders();
+      doc.setFont(FONT, "normal"); doc.setFontSize(8);
     }
-  }
-  const colX = {
-    company: left,
-    role:    left + 110,
-    last:    left + 230,
-    applied: left + 350,
-    changed: left + 430,
-  };
-  const colW = { company: 104, role: 114, last: 116, applied: 76, changed: 30 };
-  function drawColHeaders() {
-    doc.setFont(FONT, "bold"); doc.setFontSize(8); doc.setTextColor(100, 104, 112);
-    doc.text("COMPANY",            colX.company, y);
-    doc.text("ROLE",               colX.role,    y);
-    doc.text("LAST STATUS (DATE)", colX.last,    y);
-    doc.text("APPLIED",            colX.applied, y);
-    doc.text("CHG",                colX.changed, y);
-    y += 12;
   }
 
   drawHeader();
@@ -663,21 +688,33 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
 
   doc.setFont(FONT, "normal"); doc.setFontSize(8);
   rows.forEach((r) => {
-    const lastStr = `${r.lastStatus}${r.lastStatusDate ? " · " + fmtDate(r.lastStatusDate) : ""}`;
     const appliedStr = r.appliedDate ? fmtDate(r.appliedDate).split(",")[0] : "—";
-    const roleLines = doc.splitTextToSize(r.role.toUpperCase(), colW.role) as string[];
-    const rowH = Math.max(14, roleLines.length * 11 + 4);
+    const lastDateStr = r.lastStatusDate ? fmtDate(r.lastStatusDate) : "—";
+    const roleLines = doc.splitTextToSize(r.role.toUpperCase(), cols.role.w) as string[];
+    const companyLines = doc.splitTextToSize(r.company.toUpperCase(), cols.company.w) as string[];
+    const maxLines = Math.max(roleLines.length, companyLines.length);
+    const rowH = Math.max(14, maxLines * 11 + 4);
     ensureSpace(rowH);
-    doc.setTextColor(25, 28, 36);
-    doc.text(truncate(doc, r.company.toUpperCase(), colW.company), colX.company, y);
-    doc.setTextColor(40, 44, 52);
-    doc.text(roleLines, colX.role, y);
-    doc.setTextColor(r.lastStatus === "REJECTED" ? 200 : 60, r.lastStatus === "REJECTED" ? 30 : 64, r.lastStatus === "REJECTED" ? 30 : 72);
-    doc.text(truncate(doc, lastStr, colW.last), colX.last, y);
-    doc.setTextColor(80, 84, 92);
-    doc.text(truncate(doc, appliedStr, colW.applied), colX.applied, y);
-    doc.setTextColor(40, 44, 52);
-    doc.text(String(r.statusChanged), colX.changed, y);
+    const isRej = r.lastStatusBase === "REJECTED";
+    // Company (left-aligned, multi-line)
+    doc.setTextColor(isRej ? 200 : 25, isRej ? 30 : 28, isRej ? 30 : 36);
+    doc.text(companyLines, cols.company.x, y);
+    // Role (centered, multi-line)
+    doc.setTextColor(isRej ? 200 : 40, isRej ? 30 : 44, isRej ? 30 : 52);
+    roleLines.forEach((ln, i) => {
+      doc.text(ln, cols.role.x + cols.role.w / 2, y + i * 11, { align: "center" });
+    });
+    // Last status
+    doc.setTextColor(isRej ? 200 : 60, isRej ? 30 : 64, isRej ? 30 : 72);
+    drawCell(r.lastStatus, cols.lastStatus, y);
+    // Last status date
+    doc.setTextColor(isRej ? 200 : 80, isRej ? 30 : 84, isRej ? 30 : 92);
+    drawCell(lastDateStr, cols.lastDate, y);
+    // Applied date
+    drawCell(appliedStr, cols.appliedDate, y);
+    // Changed
+    doc.setTextColor(isRej ? 200 : 40, isRej ? 30 : 44, isRej ? 30 : 52);
+    drawCell(String(r.statusChanged), cols.changed, y);
     y += rowH;
   });
 
@@ -698,3 +735,4 @@ export function exportStatusTimelinePDF(apps: Application[]) {
   const win = window.open(url, "_blank");
   if (!win) window.location.href = url;
 }
+

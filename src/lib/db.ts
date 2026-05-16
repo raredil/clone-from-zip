@@ -221,7 +221,7 @@ export async function setTimer(t: TimerState) {
   return kvSet("timer", t);
 }
 export async function getSettings(): Promise<Settings> {
-  return kvGet<Settings>("settings", { notifications: true, sound: true, theme: "dark" });
+  return kvGet<Settings>("settings", { notifications: true, sound: true });
 }
 export async function setSettings(s: Settings) {
   return kvSet("settings", s);

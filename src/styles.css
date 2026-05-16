@@ -100,59 +100,6 @@
   --bg-grad-2: oklch(0.18 0.008 280);
 }
 
-/* ============ LIGHT ============ */
-.light {
-  /* Warm, paper-like terminal ambience around a charcoal split-flap board */
-  --background: oklch(0.96 0.004 90);
-  --foreground: oklch(0.18 0.008 265);
-  --card: oklch(0.985 0.003 90);
-  --card-foreground: oklch(0.18 0.008 265);
-  --popover: oklch(0.99 0.002 90);
-  --popover-foreground: oklch(0.18 0.008 265);
-  --primary: oklch(0.50 0.14 60);
-  --primary-foreground: oklch(0.985 0.003 90);
-  --secondary: oklch(0.92 0.004 90);
-  --secondary-foreground: oklch(0.20 0.008 265);
-  --muted: oklch(0.93 0.004 90);
-  --muted-foreground: oklch(0.34 0.010 265);
-  --accent: oklch(0.90 0.008 80);
-  --accent-foreground: oklch(0.20 0.008 265);
-  --destructive: oklch(0.52 0.21 25);
-  --destructive-foreground: oklch(0.985 0.005 90);
-  --border: oklch(0.82 0.006 90);
-  --input: oklch(0.97 0.004 90);
-  --ring: oklch(0.50 0.14 60);
-
-  /* Board becomes a true light surface — premium daytime terminal */
-  --board: oklch(0.91 0.005 90);
-  --board-tile: oklch(0.94 0.004 90);
-  --board-tile-alt: oklch(0.92 0.004 90);
-  --board-bezel: oklch(0.86 0.006 90);
-  --board-divider: oklch(0.80 0.006 90);
-
-  --amber: oklch(0.78 0.16 80);
-  --amber-soft: oklch(0.62 0.13 75);
-
-  --status-applied: oklch(0.30 0.012 90);
-  --status-interview: oklch(0.42 0.18 245);
-  --status-followup: oklch(0.55 0.18 90);
-  --status-saved: oklch(0.42 0.005 270);
-  --status-offer: oklch(0.56 0.24 148);
-  --status-rejected: oklch(0.50 0.22 27);
-  --status-waiting: oklch(0.50 0.10 90);
-  --status-assessment: oklch(0.42 0.18 265);
-
-  --tile-top: oklch(0.965 0.004 90);
-  --tile-mid-top: oklch(0.935 0.004 90);
-  --tile-mid-bot: oklch(0.86 0.005 90);
-  --tile-bot: oklch(0.92 0.004 90);
-  --hinge-line: oklch(0.55 0.008 90 / 0.45);
-  --hinge-highlight: oklch(1 0 0 / 0.7);
-  --tile-rim-top: oklch(1 0 0 / 0.8);
-  --tile-rim-bot: oklch(0 0 0 / 0.12);
-  --bg-grad-1: oklch(0.97 0.005 90);
-  --bg-grad-2: oklch(0.93 0.006 80);
-}
 
 @layer base {
   * { border-color: var(--color-border); }
@@ -211,11 +158,6 @@
     oklch(0 0 0 / 0) 100%);
   pointer-events: none;
 }
-.light .board-tile::after {
-  background: linear-gradient(180deg,
-    oklch(0 0 0 / 0.10) 0%,
-    oklch(0 0 0 / 0) 100%);
-}
 /* Side hinge axles removed — cleaner premium board */
 
 .flap-text {
@@ -225,7 +167,6 @@
   text-transform: uppercase;
   text-shadow: 0 1px 0 oklch(0 0 0 / 0.55);
 }
-.light .flap-text { text-shadow: 0 1px 0 oklch(1 0 0 / 0.55); }
 
 .flap-cell {
   display: inline-block;
@@ -245,10 +186,6 @@
   text-align: center;
   text-shadow: 0 1px 0 oklch(0 0 0 / 0.7);
 }
-.light .flap-cell {
-  color: oklch(0.18 0.008 265);
-  text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
-}
 
 /* Pinned (favorite) row — no special tint anymore; favorites are marked
    only with an asterisk before the company name. Class kept as a hook. */
@@ -256,7 +193,6 @@
 
 .row-flap { transition: filter 120ms ease; }
 .row-flap:hover { filter: brightness(1.08) saturate(1.05); }
-.light .row-flap:hover { filter: brightness(1.04); }
 .row-flap.is-selected {
   outline: 1px solid color-mix(in oklab, var(--amber) 70%, transparent);
   outline-offset: -1px;
@@ -274,48 +210,6 @@
 .scroll-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
 .scroll-thin::-webkit-scrollbar-track { background: transparent; }
 
-/* ============ Light-mode polish: shell, panels, depth ============ */
-.light body {
-  background-image:
-    radial-gradient(1200px 600px at 15% -10%, var(--bg-grad-1) 0%, transparent 60%),
-    radial-gradient(900px 500px at 95% 110%, var(--bg-grad-2) 0%, transparent 60%),
-    linear-gradient(180deg, oklch(0.97 0.004 90) 0%, oklch(0.93 0.005 85) 100%);
-}
-.light .board-frame {
-  background: color-mix(in oklab, var(--board-bezel) 95%, white 5%);
-  border: 1px solid color-mix(in oklab, var(--board-bezel) 60%, black 8%);
-  box-shadow: 0 1px 0 oklch(0 0 0 / 0.05);
-}
-.light aside,
-.light .paper-surface {
-  background: linear-gradient(180deg,
-    oklch(0.985 0.003 90) 0%,
-    oklch(0.96 0.004 85) 100%);
-  color: var(--foreground);
-  border-color: var(--border);
-  box-shadow:
-    0 1px 0 oklch(1 0 0 / 0.7) inset,
-    0 10px 24px -18px oklch(0 0 0 / 0.18);
-}
-/* Inputs and buttons read as light surfaces */
-.light input,
-.light textarea,
-.light select {
-  background: var(--input);
-  color: var(--foreground);
-  border-color: var(--border);
-}
-.light input::placeholder,
-.light textarea::placeholder {
-  color: color-mix(in oklab, var(--foreground) 45%, transparent);
-}
-/* Stronger borders/separators in light for hierarchy */
-.light .border-board-divider { border-color: color-mix(in oklab, var(--board-divider) 60%, white 5%); }
-/* Make muted text legible on warm paper */
-.light .text-muted-foreground { color: var(--muted-foreground); }
-/* Hover states */
-.light .hover\:bg-accent:hover { background-color: var(--accent); }
-/* Pinned rows in light mode — no special color (asterisk marker only) */
 
 /* ============ Global pointer cursor for clickable elements ============ */
 button:not(:disabled),
@@ -374,38 +268,12 @@ button:disabled,
     inset 0 -1px 0 var(--tile-rim-bot),
     inset 0 0 24px oklch(0 0 0 / 0.18);
 }
-.light .row-flap.board-tile {
-  background-image:
-    repeating-linear-gradient(90deg,
-      oklch(0 0 0 / 0.08) 0 1px,
-      transparent 1px 12px),
-    repeating-linear-gradient(90deg,
-      oklch(0 0 0 / 0.03) 0 1px,
-      transparent 1px 3px),
-    linear-gradient(180deg,
-      var(--tile-top) 0%,
-      var(--tile-mid-top) 49.4%,
-      var(--hinge-line) 49.7%,
-      var(--hinge-line) 50.3%,
-      var(--hinge-highlight) 50.6%,
-      var(--tile-mid-bot) 51%,
-      var(--tile-bot) 100%);
-  box-shadow:
-    inset 0 1px 0 var(--tile-rim-top),
-    inset 0 -1px 0 var(--tile-rim-bot),
-    inset 0 0 18px oklch(0 0 0 / 0.06);
-}
 /* Slightly stronger horizontal hinge stack shadow for dashboard rows only */
 .row-flap.board-tile::after {
   height: 3px;
   bottom: -3px;
   background: linear-gradient(180deg,
     oklch(0 0 0 / 0.45) 0%,
-    oklch(0 0 0 / 0) 100%);
-}
-.light .row-flap.board-tile::after {
-  background: linear-gradient(180deg,
-    oklch(0 0 0 / 0.16) 0%,
     oklch(0 0 0 / 0) 100%);
 }
 
@@ -451,43 +319,6 @@ button:disabled,
   .row-flap:hover .position-marquee-inner { animation: none; }
 }
 
-/* ============ Font modes (offline, system fonts only) ============ */
-/* Default = mono terminal (already set by --font-mono).
-   .font-board = airport split-flap operational display, system stack only. */
-/* Alternate font: BP Mono Regular — typewriter / mechanical terminal /
-   airport info-board feel. Uses a local-only fallback stack so the app
-   stays fully offline. No external @font-face URLs. */
-html.font-board {
-  --font-mono: "BP Mono Regular", "BPmono", "Courier Prime", "Courier New", "IBM Plex Mono", "Andale Mono", ui-monospace, monospace;
-  --font-display: "BP Mono Regular", "BPmono", "Courier Prime", "Courier New", "IBM Plex Mono", "Andale Mono", ui-monospace, monospace;
-}
-html.font-board,
-html.font-board body,
-html.font-board .flap-text,
-html.font-board input,
-html.font-board textarea,
-html.font-board select,
-html.font-board button,
-html.font-board label,
-html.font-board a,
-html.font-board span,
-html.font-board p,
-html.font-board h1,
-html.font-board h2,
-html.font-board h3,
-html.font-board h4,
-html.font-board h5,
-html.font-board h6,
-html.font-board td,
-html.font-board th,
-html.font-board li {
-  font-family: var(--font-mono) !important;
-  letter-spacing: 0.04em;
-}
-html.font-board .flap-text {
-  font-weight: 400;
-  letter-spacing: 0.10em;
-}
 
 
 /* ============================================================
@@ -530,9 +361,6 @@ html.font-board .flap-text {
   padding: 6px 4px;
   box-shadow: none;
 }
-.light .ab-screen {
-  background: oklch(0.88 0.005 90);
-}
 
 /* Applications page — tighter character rhythm so words read connected,
    slightly larger glyphs, less inner padding so letters fill panels better. */
@@ -560,10 +388,6 @@ html.font-board .flap-text {
   color: oklch(0.88 0.20 92); /* yellow */
   text-shadow: 0 1px 0 oklch(0 0 0 / 0.6), 0 0 10px oklch(0.85 0.20 92 / 0.4);
 }
-.light .ab-header-row > div {
-  color: oklch(0.50 0.18 80);
-  text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
-}
 @media (max-width: 720px) {
   .ab-header-row > div { font-size: 13px; letter-spacing: 0.24em; }
 }
@@ -586,7 +410,6 @@ html.font-board .flap-text {
   transition: filter 120ms ease;
 }
 .ab-row:hover { filter: brightness(1.12); }
-.light .ab-row:hover { filter: brightness(0.97); }
 .ab-row.is-selected {
   outline: 1px solid color-mix(in oklab, var(--amber) 80%, transparent);
   outline-offset: -1px;
@@ -611,9 +434,6 @@ html.font-board .flap-text {
   background: oklch(0.18 0.004 270);
   border-radius: 1px;
   box-shadow: inset 0 0 0 1px oklch(0 0 0 / 0.55);
-}
-.light .ab-cell {
-  background: oklch(0.22 0.008 265);
 }
 
 .ab-text {
@@ -643,10 +463,6 @@ html.font-board .flap-text {
     0 0 4px oklch(0.88 0.16 85 / 0.45),
     0 0 10px oklch(0.82 0.16 80 / 0.22);
   overflow: hidden;
-}
-.light .ab-ch {
-  color: oklch(0.94 0.04 85);
-  text-shadow: 0 0 6px oklch(0 0 0 / 0.5);
 }
 
 /* On narrow screens shrink slightly so chars never overflow the cell. */
@@ -712,7 +528,6 @@ html.font-board .flap-text {
 .ab-ch--waiting-dot       { text-shadow: 0 0 6px oklch(0.88 0.06 90 / 0.55), 0 0 12px oklch(0.88 0.06 90 / 0.30) !important; }
 /* SAVED — inactive / offline: muted dark grey, no glow */
 .ab-ch--status-SAVED      { color: oklch(0.48 0.005 270) !important; text-shadow: none !important; opacity: 0.85; }
-.light .ab-ch--status-SAVED { color: oklch(0.42 0.005 270) !important; }
 /* OFFER — vivid green, stronger glow */
 .ab-ch--status-OFFER      { color: oklch(0.82 0.30 145) !important; text-shadow: 0 0 10px oklch(0.82 0.30 145 / 1), 0 0 22px oklch(0.82 0.30 145 / 0.65), 0 0 36px oklch(0.82 0.30 145 / 0.35) !important; }
 /* REJECTED — vivid red, stronger glow */
@@ -743,11 +558,6 @@ html.font-board .flap-text {
   text-shadow: none !important;
   opacity: 0.85;
 }
-.light .ab-row.is-status-SAVED .ab-ch,
-.light .ab-row.is-status-SAVED .ab-ch--fav {
-  color: oklch(0.42 0.005 270) !important;
-  opacity: 0.9;
-}
 
 
 
@@ -757,9 +567,6 @@ html.font-board .flap-text {
   border-radius: 6px;
   border: 0;
   box-shadow: none;
-}
-.light .dashboard-screen {
-  background: oklch(0.92 0.005 90);
 }
 
 /* Applications page — meta strip beneath each airport row */
@@ -791,12 +598,6 @@ html.font-board .flap-text {
   text-shadow: 0 0 6px oklch(0.85 0.18 70 / 0.5);
   min-width: 0;
 }
-.light .ab-app-meta {
-  color: oklch(0.32 0.02 265);
-  text-shadow: none;
-}
-.light .ab-app-meta em { color: oklch(0.45 0.16 75); text-shadow: none; }
-.light .ab-app-meta__fav { color: oklch(0.50 0.18 70); text-shadow: none; }
 
 /* CAREER BOARD title — match board content (display mono) + refined glow */
 .career-board-title {
@@ -807,16 +608,8 @@ html.font-board .flap-text {
     0 0 18px oklch(0.80 0.18 80 / 0.30),
     0 1px 0 oklch(0 0 0 / 0.55);
 }
-.light .career-board-title {
-  text-shadow:
-    0 0 6px oklch(0.78 0.18 80 / 0.45),
-    0 1px 0 oklch(1 0 0 / 0.55);
-}
 .career-board-plane {
   filter:
     drop-shadow(0 0 4px oklch(0.85 0.18 85 / 0.6))
     drop-shadow(0 0 10px oklch(0.80 0.18 80 / 0.35));
-}
-.light .career-board-plane {
-  filter: drop-shadow(0 0 4px oklch(0.78 0.18 80 / 0.45));
 }

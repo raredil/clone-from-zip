@@ -33,7 +33,7 @@ const state: State = {
   timer: defaultTimer(),
   session: defaultSession(),
   sessionSummary: null,
-  settings: { notifications: true, sound: true, theme: "dark" },
+  settings: { notifications: true, sound: true },
   filters: emptyFilters(),
   selectedId: null,
   view: "DASHBOARD",
@@ -762,10 +762,7 @@ export async function wipeAll() {
   state.timer = defaultTimer();
   state.session = defaultSession();
   state.sessionSummary = null;
-  // Preserve theme/font preferences across a wipe.
-  const keptTheme = state.settings.theme;
-  const keptFont = state.settings.font;
-  state.settings = { notifications: true, sound: true, theme: keptTheme, font: keptFont };
+  state.settings = { notifications: true, sound: true };
   try {
     const d = await db.getDB();
     await Promise.all([

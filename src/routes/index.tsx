@@ -29,7 +29,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const ready = useInitStore();
   useThemeSync();
-  const themePref = useStore((s) => s.settings.theme || "dark");
+  
   const view = useStore((s) => s.view);
   const apps = useStore((s) => s.apps);
   const filters = useStore((s) => s.filters);
@@ -42,7 +42,7 @@ function Index() {
 
   return (
     <div className="min-h-screen p-3 lg:p-5">
-      <Toaster position="top-right" theme={themePref} />
+      <Toaster position="top-right" theme="dark" />
       <div className="max-w-[1600px] mx-auto flex gap-4">
         <SideMenu />
 

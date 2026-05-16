@@ -199,11 +199,7 @@ export const defaultSession = (): SessionState => ({
   cycleBaseAppliedCount: 0,
 });
 
-export type FontMode = "mono" | "board";
-
 export interface Settings {
   notifications: boolean;
   sound: boolean;
-  theme?: "dark" | "light";
-  font?: FontMode;
 }

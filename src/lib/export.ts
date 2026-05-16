@@ -537,7 +537,7 @@ export function buildStatusTimeline(apps: Application[]): TimelineRow[] {
     return {
       company: a.company,
       role: a.role,
-      lastStatus: a.status,
+      lastStatus: displayStatus(a),
       lastStatusDate,
       appliedDate,
       statusChanged: countStatusChanges(a),

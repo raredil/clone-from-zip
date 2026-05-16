@@ -651,8 +651,8 @@ function mergeDocs(existing: Application["docs"], incoming: Application["docs"])
 }
 
 export async function bulkImport(apps: Application[]) {
-  // MERGE — preserve all existing records; add imported ones.
-  // Dedupe by id first, then by link / company+role+country to avoid creating duplicates.
+  // MERGE — preserve all existing records and existing uploaded files; add imported ones.
+  await restoreImportedBlobs(apps); // write file bytes into docBlobs before sanitize strips `data`
   const byId = new Map(state.apps.map((a) => [a.id, a]));
   const byKey = new Map(state.apps.map((a) => [dedupeKey(a), a]));
   let added = 0;
@@ -661,9 +661,9 @@ export async function bulkImport(apps: Application[]) {
     const merged = sanitizeApp(raw);
     if (!merged) continue;
     if (byId.has(merged.id)) {
-      // Same id — keep newer updatedAt to avoid reverting edits.
       const existing = byId.get(merged.id)!;
-      const winner = (merged.updatedAt || "") > (existing.updatedAt || "") ? merged : existing;
+      const newer = (merged.updatedAt || "") > (existing.updatedAt || "") ? merged : existing;
+      const winner: Application = { ...newer, docs: mergeDocs(existing.docs, merged.docs) };
       byId.set(merged.id, winner);
       byKey.set(dedupeKey(winner), winner);
       updated++;
@@ -672,10 +672,10 @@ export async function bulkImport(apps: Application[]) {
     const k = dedupeKey(merged);
     const dupe = byKey.get(k);
     if (dupe) {
-      // Same logical record — keep existing id, take newer fields.
-      const winner: Application = (merged.updatedAt || "") > (dupe.updatedAt || "")
+      const newer = (merged.updatedAt || "") > (dupe.updatedAt || "")
         ? { ...merged, id: dupe.id }
         : dupe;
+      const winner: Application = { ...newer, docs: mergeDocs(dupe.docs, merged.docs) };
       byId.set(dupe.id, winner);
       byKey.set(k, winner);
       updated++;

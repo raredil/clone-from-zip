@@ -475,41 +475,73 @@ export function exportXLSX(apps: Application[], filename: string) {
 export interface TimelineRow {
   company: string;
   role: string;
-  status: Status;
-  from?: Status;
-  timestamp: string; // ISO
+  lastStatus: Status;
+  lastStatusDate: string; // ISO
+  appliedDate: string;    // ISO or ""
+  statusChanged: number;
+}
+
+/** Count meaningful status changes AFTER the first APPLIED event.
+ *  - SAVED transitions don't count
+ *  - APPLIED itself doesn't count
+ *  - Repeated identical statuses don't count (unless they represent a new
+ *    INTERVIEW/ASSESSMENT stage, which DO count because each entry is a
+ *    distinct stage occurrence in the saved history)
+ */
+export function countStatusChanges(app: Application): number {
+  const hist = app.statusHistory || [];
+  if (hist.length === 0) return 0;
+  const appliedIdx = hist.findIndex((e) => e.status === "APPLIED");
+  const start = appliedIdx === -1 ? 0 : appliedIdx + 1;
+  let count = 0;
+  let prev: Status | undefined = appliedIdx === -1 ? undefined : "APPLIED";
+  for (let i = start; i < hist.length; i++) {
+    const e = hist[i];
+    if (!e || !e.status) continue;
+    if (e.status === "SAVED") continue;
+    // Interview/Assessment repeats are new stages — always count.
+    if (e.status === "INTERVIEW" || e.status === "ASSESSMENT") {
+      count++;
+      prev = e.status;
+      continue;
+    }
+    if (e.status !== prev) {
+      count++;
+      prev = e.status;
+    }
+  }
+  return count;
 }
 
 export function buildStatusTimeline(apps: Application[]): TimelineRow[] {
-  const out: TimelineRow[] = [];
-  for (const a of apps) {
-    const hist = (a.statusHistory && a.statusHistory.length > 0)
-      ? a.statusHistory
-      : [{
-          id: "synth",
-          status: a.status,
-          ts: a.statusChangedAt || a.createdAt,
-          from: undefined as Status | undefined,
-        }];
-    for (const e of hist) {
-      if (!e || !e.ts) continue;
-      out.push({
-        company: a.company,
-        role: a.role,
-        status: e.status,
-        from: e.from,
-        timestamp: e.ts,
-      });
-    }
-  }
-  out.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-  return out;
+  return apps.map((a) => {
+    const hist = a.statusHistory || [];
+    const last = hist.length > 0 ? hist[hist.length - 1] : undefined;
+    const lastStatusDate = last?.ts || a.statusChangedAt || a.updatedAt || a.createdAt;
+    const appliedEvt = hist.find((e) => e.status === "APPLIED");
+    const appliedDate = a.appliedAt || appliedEvt?.ts || "";
+    return {
+      company: a.company,
+      role: a.role,
+      lastStatus: a.status,
+      lastStatusDate,
+      appliedDate,
+      statusChanged: countStatusChanges(a),
+    };
+  });
 }
+
+const fmtDate = (iso: string) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString();
+};
 
 export function exportStatusTimelineJSON(apps: Application[]): string {
   const rows = buildStatusTimeline(apps);
   return JSON.stringify({
-    version: 1,
+    version: 2,
     app: "career-board",
     kind: "status-timeline",
     exportedAt: new Date().toISOString(),
@@ -520,16 +552,15 @@ export function exportStatusTimelineJSON(apps: Application[]): string {
 
 export function exportStatusTimelineXLSX(apps: Application[], filename: string) {
   const rows = buildStatusTimeline(apps).map((r) => ({
-    Company: r.company,
-    Role: r.role,
-    From: r.from || "",
-    Status: r.status,
-    Timestamp: new Date(r.timestamp).toLocaleString(),
-    ISO: r.timestamp,
+    "Company": r.company,
+    "Role": r.role,
+    "Last Status (Date)": r.lastStatus + (r.lastStatusDate ? ` (${fmtDate(r.lastStatusDate)})` : ""),
+    "Applied Date": r.appliedDate ? fmtDate(r.appliedDate) : "",
+    "Status Changed": r.statusChanged,
   }));
-  const headers = ["Company","Role","From","Status","Timestamp","ISO"];
+  const headers = ["Company","Role","Last Status (Date)","Applied Date","Status Changed"];
   const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
-  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 26 }];
+  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 34 }, { wch: 22 }, { wch: 16 }];
   const headerStyle = {
     font: { bold: true, color: { rgb: "FFFFFFFF" }, name: "Calibri", sz: 11 },
     fill: { patternType: "solid", fgColor: { rgb: "FF1F2937" } },
@@ -548,7 +579,7 @@ export function exportStatusTimelineXLSX(apps: Application[], filename: string) 
   const wb = XLSX.utils.book_new();
   wb.Props = {
     Title: "Career Board Status Timeline",
-    Subject: "Status transition history",
+    Subject: "Per-application status summary",
     Author: "Career Board",
     CreatedDate: new Date(),
   };

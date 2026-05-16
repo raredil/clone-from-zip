@@ -335,10 +335,10 @@ export function generatePDF(
     doc.text(roleLines, colX.role, y);
 
     if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(60, 64, 72);
-    doc.text(truncate(doc, status, colW.status), colX.status, y);
+    doc.text(truncate(doc, status, colW.status), colX.status + colW.status / 2, y, { align: "center" });
 
     if (isRejected) doc.setTextColor(200, 30, 30); else doc.setTextColor(110, 114, 122);
-    doc.text(applied, colX.applied, y);
+    doc.text(applied, colX.applied + colW.applied / 2, y, { align: "center" });
 
     y += rowHeight;
   });

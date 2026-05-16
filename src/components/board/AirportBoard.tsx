@@ -25,7 +25,8 @@ export const FIELD_SPECS: Record<FieldKey, FieldSpec> = {
   flight: { slots: 12, align: "left", marquee: true },
   destination: { slots: 3, align: "center" },
   position: { slots: 20, align: "left", marquee: true },
-  status: { slots: 11, align: "center" }, // fits "ASSESSMENT" (10) and "INTERVIEW" (9)
+  // bumped to 13 + marquee so "ASSESSMENT 12" / "INTERVIEW 10" fit cleanly.
+  status: { slots: 13, align: "center", marquee: true },
 };
 
 /** Empty modular panels flanking the STATUS field (left + right). */

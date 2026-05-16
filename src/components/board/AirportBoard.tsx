@@ -64,20 +64,24 @@ interface FieldProps {
   spec: FieldSpec;
   fieldClass: string;
   charClass?: string;
+  /** Returns a className for character at index `i` (in the original text, not padded). */
+  charClassAt?: (i: number, ch: string) => string | undefined;
 }
 
-function AirportField({ text, spec, fieldClass, charClass }: FieldProps) {
+function AirportField({ text, spec, fieldClass, charClass, charClassAt }: FieldProps) {
   const upper = (text || "").toUpperCase();
   const chars = Array.from(upper);
   const overflow = chars.length > spec.slots;
   const total = overflow ? chars.length : spec.slots;
 
   const padded: string[] = chars.slice();
+  let leftPad = 0;
   if (!overflow) {
     if (spec.align === "center") {
       const pad = spec.slots - chars.length;
       const left = Math.floor(pad / 2);
       const right = pad - left;
+      leftPad = left;
       for (let i = 0; i < left; i++) padded.unshift(" ");
       for (let i = 0; i < right; i++) padded.push(" ");
     } else {
@@ -103,11 +107,17 @@ function AirportField({ text, spec, fieldClass, charClass }: FieldProps) {
         ))}
       </div>
       <div className="ab-text">
-        {padded.map((c, i) => (
-          <span key={i} className={cn("ab-ch", charClass)}>
-            {c === " " ? "\u00A0" : c}
-          </span>
-        ))}
+        {padded.map((c, i) => {
+          const origIdx = i - leftPad;
+          const extra = charClassAt && origIdx >= 0 && origIdx < chars.length
+            ? charClassAt(origIdx, c)
+            : undefined;
+          return (
+            <span key={i} className={cn("ab-ch", charClass, extra)}>
+              {c === " " ? "\u00A0" : c}
+            </span>
+          );
+        })}
       </div>
     </div>
   );

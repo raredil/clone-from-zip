@@ -141,24 +141,21 @@ function AirportBoardRowImpl({ app }: RowProps) {
       )}
     >
       <AirportField
-        text={app.company}
+        text={(fav ? "* " : "") + app.company}
         spec={FIELD_SPECS.flight}
         fieldClass="ab-field--flight"
-        charClass={fav ? "ab-ch--fav" : undefined}
       />
       <EmptyPanels count={DEST_PAD_SLOTS} />
       <AirportField
         text={countryCode(app.country)}
         spec={FIELD_SPECS.destination}
         fieldClass="ab-field--destination"
-        charClass={fav ? "ab-ch--fav" : undefined}
       />
       <EmptyPanels count={DEST_PAD_SLOTS} />
       <AirportField
         text={app.role}
         spec={FIELD_SPECS.position}
         fieldClass="ab-field--position"
-        charClass={fav ? "ab-ch--fav" : undefined}
       />
       <EmptyPanels count={STATUS_PAD_SLOTS} />
       <StatusField value={app.status} />

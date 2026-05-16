@@ -609,7 +609,7 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
     doc.setFont(FONT, "normal");
     doc.setFontSize(8);
     doc.setTextColor(110, 110, 110);
-    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} TRANSITIONS`, cx, 76, { align: "center" });
+    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} APPLICATIONS`, cx, 76, { align: "center" });
   }
   function drawFooter() {
     const pageNumber = doc.getCurrentPageInfo().pageNumber;
@@ -625,18 +625,20 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
     }
   }
   const colX = {
-    when:    left,
-    company: left + 130,
-    role:    left + 240,
-    status:  left + 360,
+    company: left,
+    role:    left + 110,
+    last:    left + 230,
+    applied: left + 350,
+    changed: left + 430,
   };
-  const colW = { when: 124, company: 106, role: 116, status: 100 };
+  const colW = { company: 104, role: 114, last: 116, applied: 76, changed: 30 };
   function drawColHeaders() {
     doc.setFont(FONT, "bold"); doc.setFontSize(8); doc.setTextColor(100, 104, 112);
-    doc.text("WHEN",    colX.when,    y);
-    doc.text("COMPANY", colX.company, y);
-    doc.text("ROLE",    colX.role,    y);
-    doc.text("STATUS",  colX.status,  y);
+    doc.text("COMPANY",            colX.company, y);
+    doc.text("ROLE",               colX.role,    y);
+    doc.text("LAST STATUS (DATE)", colX.last,    y);
+    doc.text("APPLIED",            colX.applied, y);
+    doc.text("CHG",                colX.changed, y);
     y += 12;
   }
 
@@ -645,25 +647,27 @@ export function generateStatusTimelinePDF(apps: Application[]): { url: string; b
 
   doc.setFont(FONT, "normal"); doc.setFontSize(8);
   rows.forEach((r) => {
-    const when = new Date(r.timestamp).toLocaleString();
-    const statusStr = r.from ? `${r.from} → ${r.status}` : r.status;
+    const lastStr = `${r.lastStatus}${r.lastStatusDate ? " · " + fmtDate(r.lastStatusDate) : ""}`;
+    const appliedStr = r.appliedDate ? fmtDate(r.appliedDate).split(",")[0] : "—";
     const roleLines = doc.splitTextToSize(r.role.toUpperCase(), colW.role) as string[];
     const rowH = Math.max(14, roleLines.length * 11 + 4);
     ensureSpace(rowH);
-    doc.setTextColor(80, 84, 92);
-    doc.text(truncate(doc, when, colW.when), colX.when, y);
     doc.setTextColor(25, 28, 36);
     doc.text(truncate(doc, r.company.toUpperCase(), colW.company), colX.company, y);
     doc.setTextColor(40, 44, 52);
     doc.text(roleLines, colX.role, y);
-    doc.setTextColor(r.status === "REJECTED" ? 200 : 60, r.status === "REJECTED" ? 30 : 64, r.status === "REJECTED" ? 30 : 72);
-    doc.text(truncate(doc, statusStr, colW.status), colX.status, y);
+    doc.setTextColor(r.lastStatus === "REJECTED" ? 200 : 60, r.lastStatus === "REJECTED" ? 30 : 64, r.lastStatus === "REJECTED" ? 30 : 72);
+    doc.text(truncate(doc, lastStr, colW.last), colX.last, y);
+    doc.setTextColor(80, 84, 92);
+    doc.text(truncate(doc, appliedStr, colW.applied), colX.applied, y);
+    doc.setTextColor(40, 44, 52);
+    doc.text(String(r.statusChanged), colX.changed, y);
     y += rowH;
   });
 
   if (rows.length === 0) {
     doc.setFont(FONT, "normal"); doc.setFontSize(10); doc.setTextColor(120,120,120);
-    doc.text("NO TRANSITIONS RECORDED", cx, y + 20, { align: "center" });
+    doc.text("NO RECORDS", cx, y + 20, { align: "center" });
   }
 
   drawFooter();

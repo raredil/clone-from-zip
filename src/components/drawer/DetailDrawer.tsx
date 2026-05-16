@@ -27,7 +27,7 @@ export function DetailDrawer() {
       <aside className="fixed top-0 right-0 h-screen w-[min(520px,100vw)] bg-card border-l border-border z-50 flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         <header className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div>
-            <div className="flap-text text-[10px] text-muted-foreground tracking-[0.25em]">APPLICATION</div>
+            <div className="flap-text text-[10px] text-muted-foreground tracking-[0.25em]">APPLICATION · {displayStatus(app)}</div>
             <h2 className="flap-text text-lg tracking-[0.15em] mt-1">{app.company}</h2>
           </div>
           <div className="flex items-center gap-1">

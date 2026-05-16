@@ -67,7 +67,40 @@ export function DetailDrawer() {
               </div>
             </div>
             <Field label="Salary" value={app.salary || ""} onChange={(v) => updateApp(app.id, { salary: v })} />
-            <Field label="Recruiter" value={app.recruiter || ""} onChange={(v) => updateApp(app.id, { recruiter: v })} />
+            <Field label="Recruiter (name)" value={app.recruiter || ""} onChange={(v) => updateApp(app.id, { recruiter: v })} />
+            <div>
+              <Label>Recruiter email</Label>
+              <div className="flex gap-1 mt-1">
+                <input
+                  type="email"
+                  defaultValue={app.recruiterEmail || ""}
+                  onBlur={(e) => updateApp(app.id, { recruiterEmail: e.target.value.trim() })}
+                  className="flex-1 bg-input border border-border rounded px-2 py-1.5 text-xs"
+                  placeholder="name@company.com"
+                />
+                {app.recruiterEmail && (
+                  <a href={`mailto:${app.recruiterEmail}`} className="px-2 py-1.5 rounded border border-border hover:bg-accent" aria-label="Email recruiter">
+                    <Mail className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label>Recruiter LinkedIn</Label>
+              <div className="flex gap-1 mt-1">
+                <input
+                  defaultValue={app.recruiterLinkedin || ""}
+                  onBlur={(e) => updateApp(app.id, { recruiterLinkedin: e.target.value.trim() })}
+                  className="flex-1 bg-input border border-border rounded px-2 py-1.5 text-xs"
+                  placeholder="https://linkedin.com/in/…"
+                />
+                {isValidUrl(app.recruiterLinkedin) && (
+                  <a href={app.recruiterLinkedin} target="_blank" rel="noreferrer" className="px-2 py-1.5 rounded border border-border hover:bg-accent" aria-label="Open LinkedIn">
+                    <Linkedin className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
             <div className="col-span-2">
               <Label>Link</Label>
               <div className="flex gap-1 mt-1">

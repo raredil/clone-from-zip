@@ -64,16 +64,38 @@ export interface FullBackup {
   timer?: unknown;
 }
 
-export function exportJSON(
+export async function exportJSON(
   apps: Application[],
   extras?: { activity?: unknown[]; presets?: unknown[]; settings?: unknown; timer?: unknown },
-): string {
+): Promise<string> {
+  // Deep-clone apps and embed file blob data (base64) onto each file-kind doc
+  // so the backup is fully portable to another laptop.
+  const appsWithFiles: Application[] = [];
+  for (const a of apps) {
+    const cloned: Application = { ...a, docs: [...(a.docs || [])] };
+    const docs = [] as typeof cloned.docs;
+    for (const d of cloned.docs) {
+      if (d && d.kind === "file" && d.blobId) {
+        try {
+          const blob = await getDocBlob(d.blobId);
+          if (blob) {
+            const data = await blobToBase64(blob);
+            docs.push({ ...d, mime: d.mime || blob.type, size: d.size ?? blob.size, data } as typeof d & { data: string });
+            continue;
+          }
+        } catch {/* drop blob silently, keep metadata */}
+      }
+      docs.push(d);
+    }
+    cloned.docs = docs;
+    appsWithFiles.push(cloned);
+  }
   const payload: FullBackup = {
-    version: 2,
+    version: 3,
     app: "career-board",
     exportedAt: new Date().toISOString(),
-    count: apps.length,
-    apps,
+    count: appsWithFiles.length,
+    apps: appsWithFiles,
     ...(extras || {}),
   };
   return JSON.stringify(payload, null, 2);

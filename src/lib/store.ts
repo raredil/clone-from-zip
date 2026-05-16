@@ -733,7 +733,7 @@ export async function bulkImportExtras(payload: {
 }
 
 export async function bulkImportReplace(apps: Application[]) {
-  // REPLACE — wipe current apps and replace with imported set
+  // REPLACE — wipe current apps + uploaded file blobs, then restore from import.
   const cleaned: Application[] = [];
   for (const raw of apps) {
     const s = sanitizeApp(raw);
@@ -742,7 +742,9 @@ export async function bulkImportReplace(apps: Application[]) {
   try {
     const d = await db.getDB();
     await d.clear("apps");
+    if (d.objectStoreNames.contains("docBlobs")) await d.clear("docBlobs");
   } catch {/* ignore */}
+  await restoreImportedBlobs(apps); // write imported file bytes into the now-empty docBlobs
   state.apps = cleaned;
   state.selectedId = null;
   await db.bulkPutApps(state.apps);

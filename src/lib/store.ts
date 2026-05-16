@@ -501,14 +501,19 @@ function finishCycle() {
     // Ensures sound fires every cycle without overlapping previous loops.
     stopAlertSound();
     if (state.timer.soundOn) playCue(success);
-    // Auto-start next cycle
-    const next = new Date().toISOString();
+    // Auto-start next cycle. Anchor `cycleStartedAt` at the PREVIOUS boundary
+    // (prev start + duration) rather than `now`, so that if the tab was
+    // throttled / asleep and many cycle-durations elapsed, the next tick(s)
+    // will catch up and fire each missed cycle in order — no skipped cycles.
+    const prevStartMs = t.cycleStartedAt ? new Date(t.cycleStartedAt).getTime() : Date.now();
+    const nextAnchorMs = prevStartMs + t.durationSec * 1000;
+    const nextAnchor = new Date(nextAnchorMs).toISOString();
     state.timer = {
       ...state.timer,
       running: true,
-      startedAt: next,
-      cycleStartedAt: next,
-      remainingSec: state.timer.durationSec,
+      startedAt: nextAnchor,
+      cycleStartedAt: nextAnchor,
+      remainingSec: Math.max(0, t.durationSec - Math.floor((Date.now() - nextAnchorMs) / 1000)),
       cycleStartCount: currentCycleBaseline(),
     };
     state.session = {

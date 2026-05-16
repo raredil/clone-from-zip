@@ -380,7 +380,7 @@ export function exportXLSX(apps: Application[], filename: string) {
     Company: a.company,
     Country: a.country,
     Role: a.role,
-    Status: a.status,
+    Status: displayStatus(a),
     Pinned: a.pinned ? "Yes" : "",
     Archived: a.archived ? "Yes" : "",
     Salary: a.salary || "",

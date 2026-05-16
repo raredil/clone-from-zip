@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, SlidersHorizontal, Pause, Play, Menu, Sun, Moon, ArrowUp, ArrowDown, Type } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, Pause, Play, Menu, Download, ArrowUp, ArrowDown } from "lucide-react";
 import { useStore, setSearch, setFilterPanelOpen, setQuickAddOpen, startTimer, pauseTimer, setMenuOpen, setFilters } from "@/lib/store";
-import { toggleTheme, toggleFont } from "@/lib/theme";
+import { exportJSON, downloadFile } from "@/lib/export";
 import type { SortKey } from "@/lib/types";
 
 export function TopBar() {
   const search = useStore((s) => s.filters.search);
   const timer = useStore((s) => s.timer);
   const filters = useStore((s) => s.filters);
-  const theme = useStore((s) => s.settings.theme || "dark");
-  const font = useStore((s) => s.settings.font || "mono");
+  const apps = useStore((s) => s.apps);
+  const activity = useStore((s) => s.activity);
+  const presets = useStore((s) => s.presets);
+  const settings = useStore((s) => s.settings);
   const activeFilterCount = countActiveFilters(filters);
   const sortBy = (filters.sortBy || "default") as SortKey;
   const sortDir = filters.sortDir || "desc";
@@ -22,6 +24,14 @@ export function TopBar() {
 
   const mm = String(Math.floor(timer.remainingSec / 60)).padStart(2, "0");
   const ss = String(timer.remainingSec % 60).padStart(2, "0");
+
+  async function quickDownloadJSON() {
+    const json = await exportJSON(apps, { activity, presets, settings, timer });
+    const mb = json.length / (1024 * 1024);
+    if (mb > 50 && !window.confirm(`This backup is large (~${mb.toFixed(1)} MB) because it includes uploaded files. Continue?`)) return;
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadFile(`career-board-backup-${stamp}.json`, json, "application/json");
+  }
 
   return (
     <div className="board-frame px-5 py-4 flex items-center gap-4 flex-wrap">
@@ -125,20 +135,12 @@ export function TopBar() {
         <span className="text-amber tabular-nums">{now ? now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "--:--:--"}</span>
       </div>
       <button
-        onClick={toggleFont}
-        aria-label="Toggle font"
-        title={font === "board" ? "Switch to terminal font" : "Switch to split-flap font"}
-        className={`p-2 rounded border border-board-divider bg-board hover:bg-accent ${font === "board" ? "text-amber" : ""}`}
-      >
-        <Type className="w-4 h-4" />
-      </button>
-      <button
-        onClick={toggleTheme}
-        aria-label="Toggle theme"
-        title={theme === "light" ? "Switch to dark" : "Switch to light"}
+        onClick={quickDownloadJSON}
+        aria-label="Quick download JSON backup"
+        title="Download full JSON backup"
         className="p-2 rounded border border-board-divider bg-board hover:bg-accent"
       >
-        {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        <Download className="w-4 h-4" />
       </button>
     </div>
   );

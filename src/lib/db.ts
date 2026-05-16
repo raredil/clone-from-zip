@@ -3,7 +3,7 @@ import type { Application, ActivityEntry, FilterPreset, TimerState, Settings } f
 import { defaultTimer } from "./types";
 
 const DB_NAME = "career-board";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -28,15 +28,37 @@ export function getDB() {
         if (!db.objectStoreNames.contains("presets")) {
           db.createObjectStore("presets", { keyPath: "id" });
         }
+        if (!db.objectStoreNames.contains("docBlobs")) {
+          db.createObjectStore("docBlobs"); // key = blob id, value = Blob
+        }
       },
     }).catch((e) => {
       console.error("[db] failed to open IndexedDB, falling back to localStorage", e);
-      // Reset cache so a future call retries instead of returning a permanently-rejected promise.
       dbPromise = null;
       throw e;
     });
   }
   return dbPromise;
+}
+
+// ============= Document blobs (local file uploads) =============
+export async function putDocBlob(id: string, blob: Blob): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.put("docBlobs", blob, id);
+  } catch (e) { console.warn("[db] putDocBlob failed", e); }
+}
+export async function getDocBlob(id: string): Promise<Blob | undefined> {
+  try {
+    const db = await getDB();
+    return (await db.get("docBlobs", id)) as Blob | undefined;
+  } catch { return undefined; }
+}
+export async function deleteDocBlob(id: string): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.delete("docBlobs", id);
+  } catch {/* ignore */}
 }
 
 // Request persistent storage so the browser does not evict IndexedDB

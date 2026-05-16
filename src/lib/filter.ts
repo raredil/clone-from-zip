@@ -48,13 +48,17 @@ export function applySort(apps: Application[], key: SortKey, dir: "asc" | "desc"
   const arr = [...apps];
   const sign = dir === "asc" ? 1 : -1;
   const cmpStr = (a: string, b: string) => a.localeCompare(b);
+  // Status-priority bucketing (OFFER top, REJECTED bottom, SAVED near bottom,
+  // pinned floats) applies ONLY when the user is explicitly sorting by Status.
+  // For every other sort key we honor the user's chosen order purely.
+  const useBuckets = key === "status";
   arr.sort((a, b) => {
-    // Status priority always wins (OFFER top, REJECTED bottom, SAVED near bottom).
-    const pa = priorityBucket(a);
-    const pb = priorityBucket(b);
-    if (pa !== pb) return pa - pb;
-    // Within the same bucket, pinned floats above non-pinned.
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    if (useBuckets) {
+      const pa = priorityBucket(a);
+      const pb = priorityBucket(b);
+      if (pa !== pb) return pa - pb;
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    }
     switch (key) {
       case "status":
         return sign * ((STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99));
@@ -65,6 +69,7 @@ export function applySort(apps: Application[], key: SortKey, dir: "asc" | "desc"
       case "oldest":  return sign * cmpStr(a.createdAt, b.createdAt);
       case "updated": return -1 * sign * cmpStr(a.updatedAt, b.updatedAt);
       case "favorites":
+        // Explicit favorite-first sort — pinned at the top, then by creation.
         if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
         return cmpStr(a.createdAt, b.createdAt);
       case "default":

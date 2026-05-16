@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { applyFilters } from "@/lib/filter";
-import { exportCSV, exportJSON, exportXLSX, downloadFile, exportPDF } from "@/lib/export";
+import { exportCSV, exportJSON, exportXLSX, downloadFile, exportPDF, exportStatusTimelineJSON, exportStatusTimelineXLSX, exportStatusTimelinePDF, buildStatusTimeline } from "@/lib/export";
 import { ALL_STATUSES, type SortKey, type Status } from "@/lib/types";
 import { countryFullName } from "@/lib/countries";
 
@@ -235,6 +235,30 @@ export function Exports() {
         >PREVIEW PDF MANIFEST ({previewCount})</button>
         <div className="text-[10px] flap-text tracking-[0.18em] text-muted-foreground leading-relaxed">
           OPENS A PREVIEW IN A NEW TAB — DOWNLOAD FROM THERE. EXCLUSIONS APPLY BEFORE SORTING. PINNED ROWS ALWAYS APPEAR FIRST WITHIN THE SORT.
+        </div>
+      </div>
+
+      <div className="board-tile rounded border border-board-divider p-4 space-y-3">
+        <div className="flap-text text-[10px] tracking-[0.25em] text-muted-foreground">
+          STATUS TIMELINE EXPORT
+        </div>
+        <div className="text-[10px] flap-text tracking-[0.18em] text-muted-foreground leading-relaxed">
+          EVERY STATUS CHANGE WITH ITS LOCAL TIMESTAMP — SEPARATE FROM THE MAIN EXPORTS.
+          {" "}{buildStatusTimeline(apps).length} TRANSITIONS RECORDED.
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            onClick={() => exportStatusTimelineXLSX(apps, `career-board-timeline-${stamp()}.xlsx`)}
+            className="px-3 py-2 rounded border border-amber/40 hover:bg-amber/10 text-amber flap-text text-[10px] tracking-[0.2em]"
+          >EXCEL (.XLSX)</button>
+          <button
+            onClick={() => exportStatusTimelinePDF(apps)}
+            className="px-3 py-2 rounded border border-amber/40 hover:bg-amber/10 text-amber flap-text text-[10px] tracking-[0.2em]"
+          >PDF PREVIEW</button>
+          <button
+            onClick={() => downloadFile(`career-board-timeline-${stamp()}.json`, exportStatusTimelineJSON(apps), "application/json")}
+            className="px-3 py-2 rounded border border-border hover:bg-accent flap-text text-[10px] tracking-[0.2em]"
+          >JSON</button>
         </div>
       </div>
 

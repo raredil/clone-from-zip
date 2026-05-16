@@ -463,3 +463,187 @@ export function exportXLSX(apps: Application[], filename: string) {
 
   XLSX.writeFile(wb, filename);
 }
+
+/* ============================================================
+ * STATUS TIMELINE EXPORTS
+ * Separate from the main exports. Flattens every status
+ * transition into its own row: company, role, status, timestamp,
+ * (optional) previous status. Falls back to statusChangedAt /
+ * createdAt when historical records are incomplete.
+ * ============================================================ */
+
+export interface TimelineRow {
+  company: string;
+  role: string;
+  status: Status;
+  from?: Status;
+  timestamp: string; // ISO
+}
+
+export function buildStatusTimeline(apps: Application[]): TimelineRow[] {
+  const out: TimelineRow[] = [];
+  for (const a of apps) {
+    const hist = (a.statusHistory && a.statusHistory.length > 0)
+      ? a.statusHistory
+      : [{
+          id: "synth",
+          status: a.status,
+          ts: a.statusChangedAt || a.createdAt,
+          from: undefined as Status | undefined,
+        }];
+    for (const e of hist) {
+      if (!e || !e.ts) continue;
+      out.push({
+        company: a.company,
+        role: a.role,
+        status: e.status,
+        from: e.from,
+        timestamp: e.ts,
+      });
+    }
+  }
+  out.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return out;
+}
+
+export function exportStatusTimelineJSON(apps: Application[]): string {
+  const rows = buildStatusTimeline(apps);
+  return JSON.stringify({
+    version: 1,
+    app: "career-board",
+    kind: "status-timeline",
+    exportedAt: new Date().toISOString(),
+    count: rows.length,
+    entries: rows,
+  }, null, 2);
+}
+
+export function exportStatusTimelineXLSX(apps: Application[], filename: string) {
+  const rows = buildStatusTimeline(apps).map((r) => ({
+    Company: r.company,
+    Role: r.role,
+    From: r.from || "",
+    Status: r.status,
+    Timestamp: new Date(r.timestamp).toLocaleString(),
+    ISO: r.timestamp,
+  }));
+  const headers = ["Company","Role","From","Status","Timestamp","ISO"];
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws["!cols"] = [{ wch: 24 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 22 }, { wch: 26 }];
+  const headerStyle = {
+    font: { bold: true, color: { rgb: "FFFFFFFF" }, name: "Calibri", sz: 11 },
+    fill: { patternType: "solid", fgColor: { rgb: "FF1F2937" } },
+    alignment: { horizontal: "left", vertical: "center" },
+    border: { bottom: { style: "thin", color: { rgb: "FF111827" } } },
+  };
+  for (let c = 0; c < headers.length; c++) {
+    const addr = XLSX.utils.encode_cell({ r: 0, c });
+    if (ws[addr]) (ws[addr] as Record<string, unknown>).s = headerStyle;
+  }
+  const lastColLetter = XLSX.utils.encode_col(headers.length - 1);
+  ws["!autofilter"] = { ref: `A1:${lastColLetter}${rows.length + 1}` };
+  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  (ws as Record<string, unknown>)["!views"] = [{ state: "frozen", ySplit: 1, topLeftCell: "A2" }];
+
+  const wb = XLSX.utils.book_new();
+  wb.Props = {
+    Title: "Career Board Status Timeline",
+    Subject: "Status transition history",
+    Author: "Career Board",
+    CreatedDate: new Date(),
+  };
+  XLSX.utils.book_append_sheet(wb, ws, "Status Timeline");
+  XLSX.writeFile(wb, filename);
+}
+
+export function generateStatusTimelinePDF(apps: Application[]): { url: string; blob: Blob; filename: string } {
+  const rows = buildStatusTimeline(apps);
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const cx = pageWidth / 2;
+  const contentWidth = Math.min(460, pageWidth - 80);
+  const left = cx - contentWidth / 2;
+  const FONT = "courier";
+  const TOP_MARGIN = 130;
+  const BOTTOM_LIMIT = pageHeight - 60;
+  let y = TOP_MARGIN;
+  const generatedAt = new Date().toLocaleString();
+
+  function drawHeader() {
+    doc.setFont(FONT, "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(20, 24, 32);
+    doc.text("CAREER BOARD — STATUS TIMELINE", cx, 56, { align: "center" });
+    doc.setFont(FONT, "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(110, 110, 110);
+    doc.text(`GENERATED ${generatedAt.toUpperCase()}   ·   ${rows.length} TRANSITIONS`, cx, 76, { align: "center" });
+  }
+  function drawFooter() {
+    const pageNumber = doc.getCurrentPageInfo().pageNumber;
+    const totalPages = doc.getNumberOfPages();
+    doc.setFont(FONT, "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`${generatedAt}   ·   PAGE ${pageNumber} / ${totalPages}`, cx, pageHeight - 24, { align: "center" });
+  }
+  function ensureSpace(needed: number) {
+    if (y + needed > BOTTOM_LIMIT) {
+      drawFooter(); doc.addPage(); y = TOP_MARGIN; drawHeader(); drawColHeaders();
+    }
+  }
+  const colX = {
+    when:    left,
+    company: left + 130,
+    role:    left + 240,
+    status:  left + 360,
+  };
+  const colW = { when: 124, company: 106, role: 116, status: 100 };
+  function drawColHeaders() {
+    doc.setFont(FONT, "bold"); doc.setFontSize(8); doc.setTextColor(100, 104, 112);
+    doc.text("WHEN",    colX.when,    y);
+    doc.text("COMPANY", colX.company, y);
+    doc.text("ROLE",    colX.role,    y);
+    doc.text("STATUS",  colX.status,  y);
+    y += 12;
+  }
+
+  drawHeader();
+  drawColHeaders();
+
+  doc.setFont(FONT, "normal"); doc.setFontSize(8);
+  rows.forEach((r) => {
+    const when = new Date(r.timestamp).toLocaleString();
+    const statusStr = r.from ? `${r.from} → ${r.status}` : r.status;
+    const roleLines = doc.splitTextToSize(r.role.toUpperCase(), colW.role) as string[];
+    const rowH = Math.max(14, roleLines.length * 11 + 4);
+    ensureSpace(rowH);
+    doc.setTextColor(80, 84, 92);
+    doc.text(truncate(doc, when, colW.when), colX.when, y);
+    doc.setTextColor(25, 28, 36);
+    doc.text(truncate(doc, r.company.toUpperCase(), colW.company), colX.company, y);
+    doc.setTextColor(40, 44, 52);
+    doc.text(roleLines, colX.role, y);
+    doc.setTextColor(r.status === "REJECTED" ? 200 : 60, r.status === "REJECTED" ? 30 : 64, r.status === "REJECTED" ? 30 : 72);
+    doc.text(truncate(doc, statusStr, colW.status), colX.status, y);
+    y += rowH;
+  });
+
+  if (rows.length === 0) {
+    doc.setFont(FONT, "normal"); doc.setFontSize(10); doc.setTextColor(120,120,120);
+    doc.text("NO TRANSITIONS RECORDED", cx, y + 20, { align: "center" });
+  }
+
+  drawFooter();
+  const filename = `career-board-timeline-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-")}.pdf`;
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  return { url, blob, filename };
+}
+
+export function exportStatusTimelinePDF(apps: Application[]) {
+  const { url } = generateStatusTimelinePDF(apps);
+  const win = window.open(url, "_blank");
+  if (!win) window.location.href = url;
+}

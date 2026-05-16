@@ -3,6 +3,25 @@ import jsPDF from "jspdf";
 import type { Application, FilterState, SortKey, Status } from "./types";
 import { applySort } from "./filter";
 import { countryFullName } from "./countries";
+import { getDocBlob } from "./db";
+
+// --- Base64 helpers for embedding/restoring uploaded file blobs in JSON. ---
+export async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK)) as number[]);
+  }
+  return btoa(bin);
+}
+export function base64ToBlob(b64: string, mime?: string): Blob {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime || "application/octet-stream" });
+}
 
 function csvEscape(v: unknown): string {
   if (v === null || v === undefined) return "";

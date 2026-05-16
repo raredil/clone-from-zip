@@ -31,6 +31,13 @@ export interface DocLink {
   id: string;
   name: string;
   url: string;
+  /** "link" (external URL) or "file" (locally stored blob). Defaults to "link" for legacy records. */
+  kind?: "link" | "file";
+  /** IndexedDB blob id when kind === "file". */
+  blobId?: string;
+  mime?: string;
+  size?: number;
+  addedAt?: string;
 }
 
 export interface StatusEvent {
@@ -58,6 +65,8 @@ export interface Application {
   archived: boolean;
   salary?: string;
   recruiter?: string;
+  recruiterEmail?: string;
+  recruiterLinkedin?: string;
   notes?: string;
   link?: string;
   tags: string[];

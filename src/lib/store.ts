@@ -139,6 +139,8 @@ export async function addApp(partial: Partial<Application>) {
 }
 
 const saveDebounce = new Map<string, ReturnType<typeof setTimeout>>();
+// Per-app redo stack for status undo/redo. Transient, in-memory only.
+const redoStacks = new Map<string, import("./types").StatusEvent[]>();
 export function updateApp(id: string, patch: Partial<Application>, opts: { activity?: string } = {}) {
   const idx = state.apps.findIndex((a) => a.id === id);
   if (idx === -1) return;
@@ -153,6 +155,8 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
     if (patch.status === "APPLIED" && !next.appliedAt) {
       next.appliedAt = now;
     }
+    // A fresh status change invalidates any pending redo for this app.
+    redoStacks.delete(id);
   }
   state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
   if (patch.pinned !== undefined && patch.pinned !== prev.pinned) {

@@ -260,23 +260,21 @@ export function generatePDF(
   drawHeader();
 
   // ---- Borderless table layout ----
-  // Columns: # | COMPANY | COUNTRY | ROLE (wraps) | STATUS | APPLIED
-  // ROLE gets the most flexible space and wraps to multiple lines when long
-  // so POSITION text is never cut off.
+  // Columns: # | COMPANY | COUNTRY | ROLE (wraps) | STATUS (centered) | APPLIED (centered)
   const colX = {
     idx:     left,
     company: left + 24,
     country: left + 128,
     role:    left + 204,
-    status:  left + 332,
-    applied: left + 388,
+    status:  left + 318,
+    applied: left + 410,
   };
   const colW = {
     company: 100,
-    country: 72,
-    role:    124, // widest — wraps when needed
-    status:  52,
-    applied: 50,
+    country: 70,
+    role:    110, // wraps when needed
+    status:  82, // widened so "ASSESSMENT 10" / "FOLLOW-UP" fit
+    applied: 70,
   };
   const ROW_H = 16;
   const LINE_H = 11;
@@ -289,8 +287,8 @@ export function generatePDF(
     doc.text("COMPANY", colX.company, y);
     doc.text("COUNTRY", colX.country, y);
     doc.text("ROLE",    colX.role,    y);
-    doc.text("STATUS",  colX.status,  y);
-    doc.text("APPLIED", colX.applied, y);
+    doc.text("STATUS",  colX.status + colW.status / 2, y, { align: "center" });
+    doc.text("APPLIED", colX.applied + colW.applied / 2, y, { align: "center" });
     y += 6;
     // very subtle dotted separator under header (no border line)
     doc.setTextColor(210, 210, 210);

@@ -192,6 +192,88 @@ export function selectApp(id: string | null) {
   emit();
 }
 
+// ===== Status history undo / redo / clear =====
+export function canUndoStatus(id: string): boolean {
+  const app = state.apps.find((a) => a.id === id);
+  if (!app) return false;
+  const h = app.statusHistory || [];
+  return h.length > 1;
+}
+export function canRedoStatus(id: string): boolean {
+  const stack = redoStacks.get(id);
+  return !!stack && stack.length > 0;
+}
+export function undoStatusChange(id: string) {
+  const idx = state.apps.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  const prev = state.apps[idx];
+  const hist = [...(prev.statusHistory || [])];
+  if (hist.length < 2) return; // nothing meaningful to undo
+  const popped = hist.pop()!;
+  const restoredEvt = hist[hist.length - 1];
+  const restoredStatus = restoredEvt.status;
+  const now = new Date().toISOString();
+  const next: Application = {
+    ...prev,
+    status: restoredStatus,
+    statusHistory: hist,
+    statusChangedAt: restoredEvt.ts,
+    updatedAt: now,
+  };
+  // If we just undid the only APPLIED transition, drop appliedAt so it can be re-set.
+  if (!hist.some((e) => e.status === "APPLIED")) {
+    next.appliedAt = undefined;
+  }
+  state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
+  const stack = redoStacks.get(id) || [];
+  stack.push(popped);
+  redoStacks.set(id, stack);
+  pushActivity("STATUS", `${next.company}: undo → ${restoredStatus}`, id);
+  emit();
+  db.putApp(next);
+}
+export function redoStatusChange(id: string) {
+  const stack = redoStacks.get(id);
+  if (!stack || stack.length === 0) return;
+  const idx = state.apps.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  const evt = stack.pop()!;
+  redoStacks.set(id, stack);
+  const prev = state.apps[idx];
+  const hist = [...(prev.statusHistory || []), evt];
+  const now = new Date().toISOString();
+  const next: Application = {
+    ...prev,
+    status: evt.status,
+    statusHistory: hist,
+    statusChangedAt: evt.ts,
+    updatedAt: now,
+  };
+  if (evt.status === "APPLIED" && !next.appliedAt) next.appliedAt = evt.ts;
+  state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
+  pushActivity("STATUS", `${next.company}: redo → ${evt.status}`, id);
+  emit();
+  db.putApp(next);
+}
+export function clearStatusHistory(id: string) {
+  const idx = state.apps.findIndex((a) => a.id === id);
+  if (idx === -1) return;
+  const prev = state.apps[idx];
+  const now = new Date().toISOString();
+  const synth = { id: cryptoId(), status: prev.status, ts: now };
+  const next: Application = {
+    ...prev,
+    statusHistory: [synth],
+    statusChangedAt: now,
+    updatedAt: now,
+  };
+  state.apps = [...state.apps.slice(0, idx), next, ...state.apps.slice(idx + 1)];
+  redoStacks.delete(id);
+  pushActivity("STATUS", `${next.company}: history cleared`, id);
+  emit();
+  db.putApp(next);
+}
+
 // Filters
 export function setFilters(f: Partial<FilterState>) {
   state.filters = { ...state.filters, ...f };

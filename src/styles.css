@@ -83,7 +83,7 @@
   --status-interview: oklch(0.74 0.14 235);
   --status-followup: oklch(0.86 0.18 95);
   --status-saved: oklch(0.48 0.005 270);
-  --status-offer: oklch(0.82 0.30 145);
+  --status-offer: oklch(0.90 0.34 142);
   --status-rejected: oklch(0.66 0.30 27);
   --status-waiting: oklch(0.82 0.10 90);
   --status-assessment: oklch(0.66 0.16 260);
@@ -137,7 +137,7 @@
   --status-interview: oklch(0.42 0.18 245);
   --status-followup: oklch(0.55 0.18 90);
   --status-saved: oklch(0.42 0.005 270);
-  --status-offer: oklch(0.46 0.20 150);
+  --status-offer: oklch(0.56 0.24 148);
   --status-rejected: oklch(0.50 0.22 27);
   --status-waiting: oklch(0.50 0.10 90);
   --status-assessment: oklch(0.42 0.18 265);
@@ -250,28 +250,9 @@
   text-shadow: 0 1px 0 oklch(1 0 0 / 0.6);
 }
 
-/* Pinned (favorite) row — amber flap stock */
-.row-pinned {
-  background:
-    repeating-linear-gradient(90deg,
-      oklch(0 0 0 / 0.06) 0 1px,
-      transparent 1px 3px),
-    linear-gradient(180deg,
-      oklch(0.62 0.14 78) 0%,
-      oklch(0.55 0.13 75) 49.4%,
-      oklch(0 0 0 / 0.7) 49.7%,
-      oklch(0 0 0 / 0.7) 50.3%,
-      oklch(0.42 0.10 72) 50.6%,
-      oklch(0.50 0.12 75) 51%,
-      oklch(0.58 0.13 76) 100%) !important;
-  color: oklch(0.14 0.02 60) !important;
-}
-.row-pinned .flap-text,
-.row-pinned span,
-.row-pinned td {
-  color: oklch(0.14 0.02 60) !important;
-  text-shadow: 0 1px 0 oklch(0.95 0.01 90 / 0.25) !important;
-}
+/* Pinned (favorite) row — no special tint anymore; favorites are marked
+   only with an asterisk before the company name. Class kept as a hook. */
+.row-pinned { /* intentionally empty — visual marker is the leading "*" */ }
 
 .row-flap { transition: filter 120ms ease; }
 .row-flap:hover { filter: brightness(1.08) saturate(1.05); }
@@ -682,11 +663,9 @@ html.font-board .flap-text {
   .ab-ch { font-size: 10.5px; }
 }
 
-/* Favorite — text only goes orange. Status keeps its own colors. */
-.ab-ch--fav {
-  color: oklch(0.78 0.18 70) !important;
-  text-shadow: 0 0 6px oklch(0.78 0.18 70 / 0.45) !important;
-}
+/* Favorite — visual marker is the leading "*" before the flight name.
+   No color override (favorites use the default board glyph color). */
+.ab-ch--fav { /* intentionally empty */ }
 
 /* Smooth, GPU-friendly slide — chars glide under the fixed cell layer.
    Triggers only on hover/focus of the row, only on overflowing fields.

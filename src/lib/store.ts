@@ -628,6 +628,7 @@ export async function wipeAll() {
       d.clear("activity"),
       d.clear("presets"),
       d.clear("kv"),
+      d.objectStoreNames.contains("docBlobs") ? d.clear("docBlobs") : Promise.resolve(),
     ]);
   } catch {/* ignore */}
   if (typeof localStorage !== "undefined") {

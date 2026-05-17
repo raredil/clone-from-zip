@@ -158,42 +158,42 @@ export async function getAllApps(): Promise<Application[]> {
 }
 
 export async function putApp(app: Application) {
-  try {
-    const db = await getDB();
-    await db.put("apps", app);
-  } catch {/* ignore */}
-  // mirror to LS as backup using read-modify-write on LS only (avoid
-  // re-reading IDB which can be slow under load).
+  // Write the synchronous mirror FIRST. If the browser/PC shuts down while
+  // IndexedDB is still opening or committing, this snapshot still survives.
   const arr = readLS<Application[]>("apps", []);
   const idx = arr.findIndex((a) => a.id === app.id);
   if (idx >= 0) arr[idx] = app; else arr.push(app);
   writeLS("apps", arr);
+  try {
+    const db = await getDB();
+    await db.put("apps", app);
+  } catch {/* ignore */}
 }
 
 export async function deleteApp(id: string) {
+  writeLS("apps", readLS<Application[]>("apps", []).filter((a) => a.id !== id));
   try {
     const db = await getDB();
     await db.delete("apps", id);
   } catch {/* ignore */}
-  writeLS("apps", readLS<Application[]>("apps", []).filter((a) => a.id !== id));
 }
 
 export async function bulkPutApps(apps: Application[]) {
+  writeLS("apps", apps);
   try {
     const db = await getDB();
     const tx = db.transaction("apps", "readwrite");
     await Promise.all(apps.map((a) => tx.store.put(a)));
     await tx.done;
   } catch {/* ignore */}
-  writeLS("apps", apps);
 }
 
 export async function clearAllApps() {
+  writeLS("apps", []);
   try {
     const db = await getDB();
     await db.clear("apps");
   } catch {/* ignore */}
-  writeLS("apps", []);
 }
 
 // ============= Activity =============
@@ -214,13 +214,13 @@ export async function getAllActivity(): Promise<ActivityEntry[]> {
   return [...all].sort((a, b) => b.ts.localeCompare(a.ts));
 }
 export async function pushActivity(e: ActivityEntry) {
+  const arr = readLS<ActivityEntry[]>("activity", []);
+  arr.unshift(e);
+  writeLS("activity", arr.slice(0, 1000));
   try {
     const db = await getDB();
     await db.put("activity", e);
   } catch {/* ignore */}
-  const arr = readLS<ActivityEntry[]>("activity", []);
-  arr.unshift(e);
-  writeLS("activity", arr.slice(0, 1000));
 }
 
 // ============= KV (timer, settings) =============
@@ -245,11 +245,11 @@ export async function kvGet<T>(key: string, fallback: T): Promise<T> {
   return fallback;
 }
 export async function kvSet<T>(key: string, value: T) {
+  writeLS(`kv:${key}`, value);
   try {
     const db = await getDB();
     await db.put("kv", value, key);
   } catch {/* ignore */}
-  writeLS(`kv:${key}`, value);
 }
 
 export async function getTimer(): Promise<TimerState> {

@@ -97,6 +97,30 @@ async function restoreToIDB<T>(store: "apps" | "activity" | "presets", rows: T[]
   } catch {/* ignore */}
 }
 
+async function replaceIDBStore<T>(store: "apps" | "activity" | "presets", rows: T[]) {
+  try {
+    const db = await getDB();
+    const tx = db.transaction(store, "readwrite");
+    await tx.store.clear();
+    await Promise.all(rows.map((r) => tx.store.put(r as never)));
+    await tx.done;
+  } catch {/* ignore */}
+}
+
+function appSnapshotTime(rows: Application[], key?: string): number {
+  const meta = key ? readLSMeta(key) : 0;
+  let newest = 0;
+  for (const a of rows) {
+    const ts = Date.parse(a.updatedAt || a.createdAt || "");
+    if (Number.isFinite(ts) && ts > newest) newest = ts;
+  }
+  return Math.max(meta, newest);
+}
+
+function hasNonSeedRows(rows: Application[]): boolean {
+  return rows.some((a) => !String(a.id || "").startsWith("seed-"));
+}
+
 // ============= Apps =============
 export async function getAllApps(): Promise<Application[]> {
   let fromIdb: Application[] | null = null;
@@ -114,6 +138,20 @@ export async function getAllApps(): Promise<Application[]> {
   }
   // Keep LS in sync if it's stale relative to IDB.
   if (fromIdb && fromIdb.length > 0 && fromLs.length === 0) {
+    writeLS("apps", fromIdb);
+    return fromIdb;
+  }
+  if (fromIdb && fromIdb.length > 0 && fromLs.length > 0) {
+    const idbIsSeedOnly = !hasNonSeedRows(fromIdb);
+    const lsHasUserRows = hasNonSeedRows(fromLs);
+    const lsTime = appSnapshotTime(fromLs, "apps");
+    const idbTime = appSnapshotTime(fromIdb);
+    // localStorage is our synchronous durability mirror. If IndexedDB is a
+    // stale seed/default snapshot after a restart, replace it from the mirror.
+    if ((idbIsSeedOnly && lsHasUserRows) || lsTime >= idbTime) {
+      await replaceIDBStore("apps", fromLs);
+      return fromLs;
+    }
     writeLS("apps", fromIdb);
   }
   return fromIdb ?? fromLs;
@@ -269,7 +307,19 @@ function readLS<T>(key: string, fallback: T): T {
     return v ? (JSON.parse(v) as T) : fallback;
   } catch { return fallback; }
 }
+function readLSMeta(key: string): number {
+  if (typeof localStorage === "undefined") return 0;
+  try {
+    const v = localStorage.getItem(`cb:${key}:meta`);
+    if (!v) return 0;
+    const parsed = JSON.parse(v) as { updatedAt?: number };
+    return typeof parsed.updatedAt === "number" ? parsed.updatedAt : 0;
+  } catch { return 0; }
+}
 function writeLS<T>(key: string, value: T) {
   if (typeof localStorage === "undefined") return;
-  try { localStorage.setItem(`cb:${key}`, JSON.stringify(value)); } catch {/* quota */}
+  try {
+    localStorage.setItem(`cb:${key}`, JSON.stringify(value));
+    localStorage.setItem(`cb:${key}:meta`, JSON.stringify({ updatedAt: Date.now() }));
+  } catch {/* quota */}
 }

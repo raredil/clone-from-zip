@@ -97,6 +97,30 @@ async function restoreToIDB<T>(store: "apps" | "activity" | "presets", rows: T[]
   } catch {/* ignore */}
 }
 
+async function replaceIDBStore<T>(store: "apps" | "activity" | "presets", rows: T[]) {
+  try {
+    const db = await getDB();
+    const tx = db.transaction(store, "readwrite");
+    await tx.store.clear();
+    await Promise.all(rows.map((r) => tx.store.put(r as never)));
+    await tx.done;
+  } catch {/* ignore */}
+}
+
+function appSnapshotTime(rows: Application[], key?: string): number {
+  const meta = key ? readLSMeta(key) : 0;
+  let newest = 0;
+  for (const a of rows) {
+    const ts = Date.parse(a.updatedAt || a.createdAt || "");
+    if (Number.isFinite(ts) && ts > newest) newest = ts;
+  }
+  return Math.max(meta, newest);
+}
+
+function hasNonSeedRows(rows: Application[]): boolean {
+  return rows.some((a) => !String(a.id || "").startsWith("seed-"));
+}
+
 // ============= Apps =============
 export async function getAllApps(): Promise<Application[]> {
   let fromIdb: Application[] | null = null;
@@ -115,47 +139,61 @@ export async function getAllApps(): Promise<Application[]> {
   // Keep LS in sync if it's stale relative to IDB.
   if (fromIdb && fromIdb.length > 0 && fromLs.length === 0) {
     writeLS("apps", fromIdb);
+    return fromIdb;
+  }
+  if (fromIdb && fromIdb.length > 0 && fromLs.length > 0) {
+    const idbIsSeedOnly = !hasNonSeedRows(fromIdb);
+    const lsHasUserRows = hasNonSeedRows(fromLs);
+    const lsTime = appSnapshotTime(fromLs, "apps");
+    const idbTime = appSnapshotTime(fromIdb);
+    // localStorage is our synchronous durability mirror. If IndexedDB is a
+    // stale seed/default snapshot after a restart, replace it from the mirror.
+    if ((idbIsSeedOnly && lsHasUserRows) || lsTime >= idbTime) {
+      await replaceIDBStore("apps", fromLs);
+      return fromLs;
+    }
+    writeLS("apps", fromIdb);
   }
   return fromIdb ?? fromLs;
 }
 
 export async function putApp(app: Application) {
-  try {
-    const db = await getDB();
-    await db.put("apps", app);
-  } catch {/* ignore */}
-  // mirror to LS as backup using read-modify-write on LS only (avoid
-  // re-reading IDB which can be slow under load).
+  // Write the synchronous mirror FIRST. If the browser/PC shuts down while
+  // IndexedDB is still opening or committing, this snapshot still survives.
   const arr = readLS<Application[]>("apps", []);
   const idx = arr.findIndex((a) => a.id === app.id);
   if (idx >= 0) arr[idx] = app; else arr.push(app);
   writeLS("apps", arr);
+  try {
+    const db = await getDB();
+    await db.put("apps", app);
+  } catch {/* ignore */}
 }
 
 export async function deleteApp(id: string) {
+  writeLS("apps", readLS<Application[]>("apps", []).filter((a) => a.id !== id));
   try {
     const db = await getDB();
     await db.delete("apps", id);
   } catch {/* ignore */}
-  writeLS("apps", readLS<Application[]>("apps", []).filter((a) => a.id !== id));
 }
 
 export async function bulkPutApps(apps: Application[]) {
+  writeLS("apps", apps);
   try {
     const db = await getDB();
     const tx = db.transaction("apps", "readwrite");
     await Promise.all(apps.map((a) => tx.store.put(a)));
     await tx.done;
   } catch {/* ignore */}
-  writeLS("apps", apps);
 }
 
 export async function clearAllApps() {
+  writeLS("apps", []);
   try {
     const db = await getDB();
     await db.clear("apps");
   } catch {/* ignore */}
-  writeLS("apps", []);
 }
 
 // ============= Activity =============
@@ -176,13 +214,13 @@ export async function getAllActivity(): Promise<ActivityEntry[]> {
   return [...all].sort((a, b) => b.ts.localeCompare(a.ts));
 }
 export async function pushActivity(e: ActivityEntry) {
+  const arr = readLS<ActivityEntry[]>("activity", []);
+  arr.unshift(e);
+  writeLS("activity", arr.slice(0, 1000));
   try {
     const db = await getDB();
     await db.put("activity", e);
   } catch {/* ignore */}
-  const arr = readLS<ActivityEntry[]>("activity", []);
-  arr.unshift(e);
-  writeLS("activity", arr.slice(0, 1000));
 }
 
 // ============= KV (timer, settings) =============
@@ -207,11 +245,11 @@ export async function kvGet<T>(key: string, fallback: T): Promise<T> {
   return fallback;
 }
 export async function kvSet<T>(key: string, value: T) {
+  writeLS(`kv:${key}`, value);
   try {
     const db = await getDB();
     await db.put("kv", value, key);
   } catch {/* ignore */}
-  writeLS(`kv:${key}`, value);
 }
 
 export async function getTimer(): Promise<TimerState> {
@@ -244,21 +282,21 @@ export async function getPresets(): Promise<FilterPreset[]> {
   return fromIdb ?? fromLs;
 }
 export async function putPreset(p: FilterPreset) {
-  try {
-    const db = await getDB();
-    await db.put("presets", p);
-  } catch {/* ignore */}
   const arr = readLS<FilterPreset[]>("presets", []);
   const idx = arr.findIndex((x) => x.id === p.id);
   if (idx >= 0) arr[idx] = p; else arr.push(p);
   writeLS("presets", arr);
+  try {
+    const db = await getDB();
+    await db.put("presets", p);
+  } catch {/* ignore */}
 }
 export async function deletePreset(id: string) {
+  writeLS("presets", readLS<FilterPreset[]>("presets", []).filter((p) => p.id !== id));
   try {
     const db = await getDB();
     await db.delete("presets", id);
   } catch {/* ignore */}
-  writeLS("presets", readLS<FilterPreset[]>("presets", []).filter((p) => p.id !== id));
 }
 
 // ============= LS helpers =============
@@ -269,7 +307,19 @@ function readLS<T>(key: string, fallback: T): T {
     return v ? (JSON.parse(v) as T) : fallback;
   } catch { return fallback; }
 }
+function readLSMeta(key: string): number {
+  if (typeof localStorage === "undefined") return 0;
+  try {
+    const v = localStorage.getItem(`cb:${key}:meta`);
+    if (!v) return 0;
+    const parsed = JSON.parse(v) as { updatedAt?: number };
+    return typeof parsed.updatedAt === "number" ? parsed.updatedAt : 0;
+  } catch { return 0; }
+}
 function writeLS<T>(key: string, value: T) {
   if (typeof localStorage === "undefined") return;
-  try { localStorage.setItem(`cb:${key}`, JSON.stringify(value)); } catch {/* quota */}
+  try {
+    localStorage.setItem(`cb:${key}`, JSON.stringify(value));
+    localStorage.setItem(`cb:${key}:meta`, JSON.stringify({ updatedAt: Date.now() }));
+  } catch {/* quota */}
 }

@@ -59,6 +59,7 @@ let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 export async function initStore() {
   if (state.ready) return;
+  installLifecycleFlush();
   // Ask the browser to keep our IndexedDB data persistent (no eviction).
   db.requestPersistentStorage().catch(() => {});
   // Try to auto-unlock audio on the first user gesture.
@@ -95,7 +96,6 @@ export async function initStore() {
   startTimerLoop();
   state.ready = true;
   emit();
-  installLifecycleFlush();
 }
 
 let lifecycleInstalled = false;
@@ -201,7 +201,10 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
     const arr: Application[] = raw ? JSON.parse(raw) : [];
     const i = arr.findIndex((a) => a.id === next.id);
     if (i >= 0) arr[i] = next; else arr.push(next);
-    if (typeof localStorage !== "undefined") localStorage.setItem(KEY, JSON.stringify(arr));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(KEY, JSON.stringify(arr));
+      localStorage.setItem("cb:apps:meta", JSON.stringify({ updatedAt: Date.now() }));
+    }
   } catch {/* quota or parse error — IDB still persists below */}
   // debounced IDB persistence
   const t = saveDebounce.get(id);

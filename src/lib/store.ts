@@ -175,10 +175,36 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
   }
   if (opts.activity) pushActivity("EDIT", opts.activity, id);
   emit();
-  // debounced persistence
+  // Synchronously mirror to localStorage right away so a sudden tab/PC
+  // shutdown (within the debounce window) cannot lose the edit. IndexedDB
+  // write is debounced to avoid write storms, but LS is a cheap, synchronous
+  // backup that db.getAllApps() will restore from on next boot.
+  try {
+    const KEY = "cb:apps";
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(KEY) : null;
+    const arr: Application[] = raw ? JSON.parse(raw) : [];
+    const i = arr.findIndex((a) => a.id === next.id);
+    if (i >= 0) arr[i] = next; else arr.push(next);
+    if (typeof localStorage !== "undefined") localStorage.setItem(KEY, JSON.stringify(arr));
+  } catch {/* quota or parse error — IDB still persists below */}
+  // debounced IDB persistence
   const t = saveDebounce.get(id);
   if (t) clearTimeout(t);
   saveDebounce.set(id, setTimeout(() => { db.putApp(next); saveDebounce.delete(id); }, 250));
+}
+
+/** Flush all pending debounced app writes immediately. Called on
+ *  pagehide / visibilitychange=hidden / beforeunload so unsaved edits
+ *  always reach IndexedDB before the tab is closed or the OS shuts down. */
+export function flushPendingSaves(): void {
+  for (const [id, t] of saveDebounce.entries()) {
+    clearTimeout(t);
+    saveDebounce.delete(id);
+    const app = state.apps.find((a) => a.id === id);
+    if (app) { try { db.putApp(app); } catch {/* ignore */} }
+  }
+  // Also persist latest timer state synchronously to LS via kvSet path.
+  try { db.setTimer(state.timer); } catch {/* ignore */}
 }
 
 export async function removeApp(id: string) {

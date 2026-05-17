@@ -282,21 +282,21 @@ export async function getPresets(): Promise<FilterPreset[]> {
   return fromIdb ?? fromLs;
 }
 export async function putPreset(p: FilterPreset) {
-  try {
-    const db = await getDB();
-    await db.put("presets", p);
-  } catch {/* ignore */}
   const arr = readLS<FilterPreset[]>("presets", []);
   const idx = arr.findIndex((x) => x.id === p.id);
   if (idx >= 0) arr[idx] = p; else arr.push(p);
   writeLS("presets", arr);
+  try {
+    const db = await getDB();
+    await db.put("presets", p);
+  } catch {/* ignore */}
 }
 export async function deletePreset(id: string) {
+  writeLS("presets", readLS<FilterPreset[]>("presets", []).filter((p) => p.id !== id));
   try {
     const db = await getDB();
     await db.delete("presets", id);
   } catch {/* ignore */}
-  writeLS("presets", readLS<FilterPreset[]>("presets", []).filter((p) => p.id !== id));
 }
 
 // ============= LS helpers =============

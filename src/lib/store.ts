@@ -95,6 +95,22 @@ export async function initStore() {
   startTimerLoop();
   state.ready = true;
   emit();
+  installLifecycleFlush();
+}
+
+let lifecycleInstalled = false;
+function installLifecycleFlush() {
+  if (lifecycleInstalled || typeof window === "undefined") return;
+  lifecycleInstalled = true;
+  // pagehide fires reliably across browsers (incl. mobile Safari) when the
+  // tab is closed, navigated away, or the OS suspends the process. We flush
+  // any debounced edits synchronously so nothing is lost on shutdown.
+  const flush = () => { try { flushPendingSaves(); } catch {/* ignore */} };
+  window.addEventListener("pagehide", flush);
+  window.addEventListener("beforeunload", flush);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flush();
+  });
 }
 
 // Activity helper

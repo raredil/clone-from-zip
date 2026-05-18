@@ -59,38 +59,65 @@ let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 export async function initStore() {
   if (state.ready) return;
+  console.log("[initStore] Starting initialization...");
   installLifecycleFlush();
-  // Force-request persistent storage and surface a warning if denied.
-  const persistGranted = await db.requestPersistentStorage().catch(() => false);
-  if (!persistGranted && typeof window !== "undefined") {
-    console.warn("⚠️ Persistent storage DENIED — data may be evicted by the browser.");
-  }
-  // Try to auto-unlock audio on the first user gesture.
+  db.requestPersistentStorage().catch(() => {});
   bindAutoUnlock();
-  // First-run sentinel — stored in BOTH IndexedDB KV and localStorage.
-  // Either copy is enough to prevent re-seeding if one storage area is stale.
+
   const IDB_SEEDED_KEY = "seeded";
   const LS_SEEDED_KEY = "cb:seeded";
   const EVER_HAD_DATA_KEY = "cb:ever-had-data";
   const hasSeededInIdb = await db.kvGet<boolean>(IDB_SEEDED_KEY, false);
   const hasSeededInLs = typeof localStorage !== "undefined" && localStorage.getItem(LS_SEEDED_KEY) === "1";
   const hasSeededFlag = hasSeededInIdb || hasSeededInLs;
+
+  // Check localStorage for existing data
+  let lsApps: Application[] = [];
+  if (typeof localStorage !== "undefined") {
+    try { lsApps = JSON.parse(localStorage.getItem("cb:apps") || "[]") as Application[]; } catch { lsApps = []; }
+  }
   const everHadData = typeof localStorage !== "undefined" && localStorage.getItem(EVER_HAD_DATA_KEY) === "1";
+
+  console.log("[initStore] Seeded flags - IDB:", hasSeededInIdb, "LS:", hasSeededInLs);
+  console.log("[initStore] Apps in localStorage:", lsApps.length);
+  console.log("[initStore] Ever had data flag:", everHadData);
+
+  // AUTO-FIX: Set flag if data exists but flag missing
+  if (lsApps.length > 0 && !everHadData) {
+    console.log("[initStore] 🔧 Auto-setting ever-had-data flag (found", lsApps.length, "apps)");
+    if (typeof localStorage !== "undefined") localStorage.setItem(EVER_HAD_DATA_KEY, "1");
+  }
+
   let apps = await db.getAllApps();
-  console.log("[initStore] seeded:", hasSeededFlag, "everHadData:", everHadData, "apps:", apps.length);
-  const shouldSeed = apps.length === 0 && !hasSeededFlag && !everHadData;
+  console.log("[initStore] Apps from getAllApps():", apps.length);
+
+  const shouldSeed = apps.length === 0 && !hasSeededFlag && !everHadData && lsApps.length === 0;
+  console.log("[initStore] Should seed?", shouldSeed, {
+    appsEmpty: apps.length === 0,
+    noSeedFlag: !hasSeededFlag,
+    noDataFlag: !everHadData,
+    lsEmpty: lsApps.length === 0,
+  });
+
   if (shouldSeed) {
+    console.log("[initStore] 🌱 First run - seeding mock data");
     apps = buildSeed();
     await db.bulkPutApps(apps);
     await pushActivity("SYSTEM", "Seeded initial sample applications");
     await db.kvSet(IDB_SEEDED_KEY, true);
     if (typeof localStorage !== "undefined") localStorage.setItem(LS_SEEDED_KEY, "1");
   } else {
-    // Returning user — repair whichever sentinel copy is missing.
+    console.log("[initStore] ✅ Skipping seed - user has data");
     if (!hasSeededInIdb) await db.kvSet(IDB_SEEDED_KEY, true);
     if (!hasSeededInLs && typeof localStorage !== "undefined") localStorage.setItem(LS_SEEDED_KEY, "1");
-    // Detect data loss: previously had user data but IDB+LS are now empty.
-    if (apps.length === 0 && everHadData) {
+
+    // RECOVERY: If IndexedDB empty but localStorage has data
+    if (apps.length === 0 && lsApps.length > 0) {
+      console.log("[initStore] 🔄 RECOVERY: Restoring", lsApps.length, "apps from localStorage");
+      await db.bulkPutApps(lsApps);
+      apps = lsApps;
+      await pushActivity("SYSTEM", `Recovered ${lsApps.length} applications from localStorage`);
+    } else if (apps.length === 0 && everHadData) {
       console.error("🚨 DATA LOSS DETECTED — previous user data not found.");
     }
   }
@@ -111,6 +138,7 @@ export async function initStore() {
   }
   startTimerLoop();
   state.ready = true;
+  console.log("[initStore] ✅ Initialization complete -", state.apps.length, "apps loaded");
   emit();
 }
 

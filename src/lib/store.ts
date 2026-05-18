@@ -841,6 +841,7 @@ export async function wipeAll() {
     // Keep the sentinel so we never re-seed sample data after a user wipe.
     localStorage.setItem("cb:seeded", "1");
   }
+  await db.kvSet("seeded", true);
   await db.setTimer(state.timer);
   await db.setSettings(state.settings);
   emit();

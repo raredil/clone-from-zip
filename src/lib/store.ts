@@ -138,6 +138,7 @@ export async function initStore() {
   }
   startTimerLoop();
   state.ready = true;
+  console.log("[initStore] ✅ Initialization complete -", state.apps.length, "apps loaded");
   emit();
 }
 

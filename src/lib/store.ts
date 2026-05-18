@@ -60,19 +60,26 @@ let timerInterval: ReturnType<typeof setInterval> | null = null;
 export async function initStore() {
   if (state.ready) return;
   installLifecycleFlush();
-  // Ask the browser to keep our IndexedDB data persistent (no eviction).
-  db.requestPersistentStorage().catch(() => {});
+  // Force-request persistent storage and surface a warning if denied.
+  const persistGranted = await db.requestPersistentStorage().catch(() => false);
+  if (!persistGranted && typeof window !== "undefined") {
+    console.warn("⚠️ Persistent storage DENIED — data may be evicted by the browser.");
+  }
   // Try to auto-unlock audio on the first user gesture.
   bindAutoUnlock();
   // First-run sentinel — stored in BOTH IndexedDB KV and localStorage.
   // Either copy is enough to prevent re-seeding if one storage area is stale.
   const IDB_SEEDED_KEY = "seeded";
   const LS_SEEDED_KEY = "cb:seeded";
+  const EVER_HAD_DATA_KEY = "cb:ever-had-data";
   const hasSeededInIdb = await db.kvGet<boolean>(IDB_SEEDED_KEY, false);
   const hasSeededInLs = typeof localStorage !== "undefined" && localStorage.getItem(LS_SEEDED_KEY) === "1";
   const hasSeededFlag = hasSeededInIdb || hasSeededInLs;
+  const everHadData = typeof localStorage !== "undefined" && localStorage.getItem(EVER_HAD_DATA_KEY) === "1";
   let apps = await db.getAllApps();
-  if (apps.length === 0 && !hasSeededFlag) {
+  console.log("[initStore] seeded:", hasSeededFlag, "everHadData:", everHadData, "apps:", apps.length);
+  const shouldSeed = apps.length === 0 && !hasSeededFlag && !everHadData;
+  if (shouldSeed) {
     apps = buildSeed();
     await db.bulkPutApps(apps);
     await pushActivity("SYSTEM", "Seeded initial sample applications");
@@ -82,6 +89,10 @@ export async function initStore() {
     // Returning user — repair whichever sentinel copy is missing.
     if (!hasSeededInIdb) await db.kvSet(IDB_SEEDED_KEY, true);
     if (!hasSeededInLs && typeof localStorage !== "undefined") localStorage.setItem(LS_SEEDED_KEY, "1");
+    // Detect data loss: previously had user data but IDB+LS are now empty.
+    if (apps.length === 0 && everHadData) {
+      console.error("🚨 DATA LOSS DETECTED — previous user data not found.");
+    }
   }
   state.apps = apps.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   state.activity = await db.getAllActivity();
@@ -155,6 +166,7 @@ export async function addApp(partial: Partial<Application>) {
   state.apps = [...state.apps, app];
   await db.putApp(app);
   await pushActivity("ADD", `Added ${app.company} — ${app.role}`, app.id);
+  if (typeof localStorage !== "undefined") localStorage.setItem("cb:ever-had-data", "1");
   emit();
   return app;
 }
@@ -196,6 +208,7 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
   }
   if (opts.activity) pushActivity("EDIT", opts.activity, id);
   emit();
+  if (typeof localStorage !== "undefined") localStorage.setItem("cb:ever-had-data", "1");
   // Synchronously mirror to localStorage right away so a sudden tab/PC
   // shutdown (within the debounce window) cannot lose the edit. IndexedDB
   // write is debounced to avoid write storms, but LS is a cheap, synchronous

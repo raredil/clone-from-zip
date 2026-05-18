@@ -13,6 +13,7 @@ import { useInitStore, useStore, stopAlert } from "@/lib/store";
 import { applyFilters } from "@/lib/filter";
 import { useThemeSync } from "@/lib/theme";
 import { ViewBoundary } from "@/components/ViewBoundary";
+import { StorageWarning } from "@/components/StorageWarning";
 
 // Lazy-load heavy panels — keeps initial dashboard render fast.
 const Analytics = lazy(() => import("@/components/views/Analytics").then((m) => ({ default: m.Analytics })));
@@ -47,6 +48,7 @@ function Index() {
         <SideMenu />
 
         <main className="flex-1 min-w-0 flex flex-col gap-4">
+          <StorageWarning />
           <TopBar />
 
           {!ready ? (

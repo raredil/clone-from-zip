@@ -211,10 +211,18 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
       localStorage.setItem("cb:apps:meta", JSON.stringify({ updatedAt: Date.now() }));
     }
   } catch {/* quota or parse error — IDB still persists below */}
-  // debounced IDB persistence
+  // Critical updates save immediately; lower-risk edits are debounced briefly.
+  const isCritical = patch.status !== undefined || patch.pinned !== undefined || patch.archived !== undefined;
   const t = saveDebounce.get(id);
-  if (t) clearTimeout(t);
-  saveDebounce.set(id, setTimeout(() => { db.putApp(next); saveDebounce.delete(id); }, 250));
+  if (t) {
+    clearTimeout(t);
+    saveDebounce.delete(id);
+  }
+  if (isCritical) {
+    db.putApp(next);
+  } else {
+    saveDebounce.set(id, setTimeout(() => { db.putApp(next); saveDebounce.delete(id); }, 100));
+  }
 }
 
 /** Flush all pending debounced app writes immediately. Called on

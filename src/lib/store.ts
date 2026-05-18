@@ -64,19 +64,24 @@ export async function initStore() {
   db.requestPersistentStorage().catch(() => {});
   // Try to auto-unlock audio on the first user gesture.
   bindAutoUnlock();
-  // First-run sentinel — once set, we NEVER auto-seed again,
-  // even if IndexedDB is momentarily empty (eviction, new profile, etc.).
-  const SEEDED_KEY = "cb:seeded";
-  const hasSeededFlag = typeof localStorage !== "undefined" && localStorage.getItem(SEEDED_KEY) === "1";
+  // First-run sentinel — stored in BOTH IndexedDB KV and localStorage.
+  // Either copy is enough to prevent re-seeding if one storage area is stale.
+  const IDB_SEEDED_KEY = "seeded";
+  const LS_SEEDED_KEY = "cb:seeded";
+  const hasSeededInIdb = await db.kvGet<boolean>(IDB_SEEDED_KEY, false);
+  const hasSeededInLs = typeof localStorage !== "undefined" && localStorage.getItem(LS_SEEDED_KEY) === "1";
+  const hasSeededFlag = hasSeededInIdb || hasSeededInLs;
   let apps = await db.getAllApps();
   if (apps.length === 0 && !hasSeededFlag) {
     apps = buildSeed();
     await db.bulkPutApps(apps);
     await pushActivity("SYSTEM", "Seeded initial sample applications");
-    if (typeof localStorage !== "undefined") localStorage.setItem(SEEDED_KEY, "1");
-  } else if (!hasSeededFlag && typeof localStorage !== "undefined") {
-    // Returning user with existing data — mark as seeded so we never overwrite.
-    localStorage.setItem(SEEDED_KEY, "1");
+    await db.kvSet(IDB_SEEDED_KEY, true);
+    if (typeof localStorage !== "undefined") localStorage.setItem(LS_SEEDED_KEY, "1");
+  } else {
+    // Returning user — repair whichever sentinel copy is missing.
+    if (!hasSeededInIdb) await db.kvSet(IDB_SEEDED_KEY, true);
+    if (!hasSeededInLs && typeof localStorage !== "undefined") localStorage.setItem(LS_SEEDED_KEY, "1");
   }
   state.apps = apps.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   state.activity = await db.getAllActivity();
@@ -206,10 +211,18 @@ export function updateApp(id: string, patch: Partial<Application>, opts: { activ
       localStorage.setItem("cb:apps:meta", JSON.stringify({ updatedAt: Date.now() }));
     }
   } catch {/* quota or parse error — IDB still persists below */}
-  // debounced IDB persistence
+  // Critical updates save immediately; lower-risk edits are debounced briefly.
+  const isCritical = patch.status !== undefined || patch.pinned !== undefined || patch.archived !== undefined;
   const t = saveDebounce.get(id);
-  if (t) clearTimeout(t);
-  saveDebounce.set(id, setTimeout(() => { db.putApp(next); saveDebounce.delete(id); }, 250));
+  if (t) {
+    clearTimeout(t);
+    saveDebounce.delete(id);
+  }
+  if (isCritical) {
+    db.putApp(next);
+  } else {
+    saveDebounce.set(id, setTimeout(() => { db.putApp(next); saveDebounce.delete(id); }, 100));
+  }
 }
 
 /** Flush all pending debounced app writes immediately. Called on
@@ -828,6 +841,7 @@ export async function wipeAll() {
     // Keep the sentinel so we never re-seed sample data after a user wipe.
     localStorage.setItem("cb:seeded", "1");
   }
+  await db.kvSet("seeded", true);
   await db.setTimer(state.timer);
   await db.setSettings(state.settings);
   emit();

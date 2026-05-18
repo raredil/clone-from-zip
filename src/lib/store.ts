@@ -806,6 +806,9 @@ export async function bulkImportReplace(apps: Application[]) {
   state.apps = cleaned;
   state.selectedId = null;
   await db.bulkPutApps(state.apps);
+  // ADDED: Ensure sentinel is set after import so we never re-seed on next boot.
+  await db.kvSet("seeded", true);
+  if (typeof localStorage !== "undefined") localStorage.setItem("cb:seeded", "1");
   await pushActivity("IMPORT", `Replaced data with ${cleaned.length} applications`);
   emit();
 }
